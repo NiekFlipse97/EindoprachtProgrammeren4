@@ -1,5 +1,6 @@
 const express = require("express")
 const bodyParser = require("body-parser")
+const config = require("./config.json")
 const app = express()
 
 app.use(bodyParser.urlencoded({extended: true}))
@@ -13,7 +14,7 @@ app.all("*", function(req, res, next){
 
 app.use("/api", require("./routes/apiv1.js"))
 
-const port = process.env.PORT || 8080
+const port = process.env.PORT || config.port
 app.listen(port, () => {
     console.log(`Connected to port ${port}`)
 })

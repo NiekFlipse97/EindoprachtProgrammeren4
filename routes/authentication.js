@@ -26,7 +26,36 @@ router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) 
 });
 
 router.route("/register").post((request, response) => {
-    // TODO: Register the user
+    // Get the users information to store in the database.
+    let firstName = request.body.firstname;
+    let lastName = request.body.lastname;
+    let email = request.body.email;
+    let password = request.body.password;
+
+    // Create the query that will be executed.
+    const query = {
+        sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
+        values: [firstName, lastName, email, password],
+        timeout: 2000
+    };
+
+    // Execute the insert query
+    db.query(query, (error, rows, fields) => {
+        // If there is no error
+        if (! error) {
+            // Set the status to 200, and return the message 'OK!'
+            response.status(200)
+                .json({
+                    msg: 'OK!'
+                })
+        } else { // If there is an error.
+            // Set the status to 500, and return the error message.
+            response.status(500)
+                .json({
+                    error: error.toString()
+                })
+        }
+    })
 });
 
 router.route("/login").post((request, response) => {
@@ -34,11 +63,9 @@ router.route("/login").post((request, response) => {
     let email = request.body.email;
     let password = request.body.password;
 
-    console.log(email + " : " + password);
-
     // Check in database for matching username and password.
     db.query("SELECT * FROM user", (error, rows, fields) => {
-        return JSON.stringify(rows.filter(function (user) {
+        JSON.stringify(rows.filter(function (user) {
             if (user.Email === email && user.Password === password) {
                 response.status(200)
                     .json({

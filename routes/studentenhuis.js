@@ -12,21 +12,24 @@ function respondWithError(response, error){
 class CheckObjects {
     // Returns true if the given object is a valid student house
     static isStudentenHuis(object){
-        return 
+        const tmp = 
             object && typeof object == "object" && 
             object.naam && typeof object.naam == "string" && 
             object.adres && typeof object.adres == "string";
+        return tmp;
     }
 
     // Returns true if the given object is a valid meal
     static isMaaltijd(object){
-        return 
+        const tmp = 
             object && typeof object == "object" && 
             object.naam && typeof object.naam == "string" && 
             object.beschrijving && typeof object.beschrijving == "string" &&
             object.ingredienten && typeof object.ingredienten == "string" &&
             object.allergie && typeof object.allergie == "string" &&
             object.prijs && typeof object.prijs == "number";
+        
+        return tmp;
     }
 }
 
@@ -70,7 +73,7 @@ router.route("/:huisId?").get((request, response) => {
          * 
          * @throws ApiErrors.notFound("huisId")
          */
-        
+
     } catch (error){
         respondWithError(response, error);
     }

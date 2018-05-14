@@ -11,8 +11,6 @@ let db = mysql.createConnection(
     }
 );
 
-console.log(db.host);
-
 db.connect((error) => {
     if (error) {
         console.log(error);

@@ -1,5 +1,6 @@
 {
     "port": 8080,
+    "secretkey": "EindopdrachtSecretKey-171014SH-",
     "database": {
         "name": "studentenhuis",
         "host": "localhost",

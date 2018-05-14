@@ -18,7 +18,7 @@ db.connect((error) => {
         console.log(error);
         return;
     } else {
-        console.log("Connected to " + db.host + ":" + db.database);
+        console.log("Connected to " + config.database.host + ":" + config.database.name);
     }
 
 });

@@ -9,14 +9,26 @@ function respondWithError(response, error){
     response.status(myError.code).json(myError);
 }
 
-// Studentenhuis
+class CheckObjects {
+    static isStudentenHuis(object){
+        return 
+            object && typeof object == "object" && 
+            object.naam && typeof object.naam == "string" && 
+            object.adres && typeof object.adres == "string";
+    }
 
-function isStudentenHuis(object){
-    return 
-        object && typeof object == "object" && 
-        object.naam && typeof object.naam == "string" && 
-        object.adres && typeof object.adres == "string";
+    static isMaaltijd(object){
+        return 
+            object && typeof object == "object" && 
+            object.naam && typeof object.naam == "string" && 
+            object.beschrijving && typeof object.beschrijving == "string" &&
+            object.ingredienten && typeof object.ingredienten == "string" &&
+            object.allergie && typeof object.allergie == "string" &&
+            object.prijs && typeof object.prijs == "number";
+    }
 }
+
+// Studentenhuis
 
 router.route("/").get((request, response) => {
     
@@ -26,7 +38,7 @@ router.route("/").post((request, response) => {
     try {
         const studentenhuis = request.body;
 
-        if(!isStudentenHuis(studentenhuis))
+        if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
 
     } catch (error){
@@ -43,7 +55,7 @@ router.route("/:huisId?").put((request, response) => {
         const huisId = request.params.huisId;
         const studentenhuis = request.body;
 
-        if(!isStudentenHuis(studentenhuis))
+        if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
 
     } catch (error){
@@ -57,16 +69,6 @@ router.route("/:huisId?").delete((request, response) => {
 
 // Maaltijd
 
-function isMaaltijd(object){
-    return 
-        object && typeof object == "object" && 
-        object.naam && typeof object.naam == "string" && 
-        object.beschrijving && typeof object.beschrijving == "string" &&
-        object.ingredienten && typeof object.ingredienten == "string" &&
-        object.allergie && typeof object.allergie == "string" &&
-        object.prijs && typeof object.prijs == "number";
-}
-
 router.route("/:huisId?/maaltijd").get((request, response) => {
     const huisId = request.params.huisId;
 });
@@ -76,7 +78,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
         const huisId = request.params.huisId;
         const maaltijd = request.body;
         
-        if(!isMaaltijd(maaltijd))
+        if(!CheckObjects.isMaaltijd(maaltijd))
             throw ApiErrors.wrongRequestBodyProperties;
 
     } catch (error){
@@ -95,7 +97,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").put((request, response) => {
         const maaltijdId = request.params.maaltijdId;
         const maaltijd = request.body;
         
-        if(!isMaaltijd(maaltijd))
+        if(!CheckObjects.isMaaltijd(maaltijd))
             throw ApiErrors.wrongRequestBodyProperties;
 
     } catch (error){

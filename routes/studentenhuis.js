@@ -23,7 +23,7 @@ router.route("/").post((request, response) => {
             throw new ApiError("Een of meer properties in de request body ontbreken of zijn foutief", 412);
 
     } catch (error){
-        response.status(error.code).json(error);
+        response.status(error.code || 500).json(error);
     }
 });
 
@@ -39,7 +39,7 @@ router.route("/:huisId?").put((request, response) => {
             throw new ApiError("Een of meer properties in de request body ontbreken of zijn foutief", 412);
 
     } catch (error){
-        response.status(error.code).json(error);
+        response.status(error.code || 500).json(error);
     }
 });
 
@@ -71,7 +71,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
             throw new ApiError("Een of meer properties in de request body ontbreken of zijn foutief", 412);
 
     } catch (error){
-        response.status(error.code).json(error);
+        response.status(error.code || 500).json(error);
     }
 });
 
@@ -87,7 +87,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").put((request, response) => {
             throw new ApiError("Een of meer properties in de request body ontbreken of zijn foutief", 412);
 
     } catch (error){
-        response.status(error.code).json(error);
+        response.status(error.code || 500).json(error);
     }
 });
 
@@ -106,7 +106,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").post((request, respon
 });
 
 router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, response) => {
-    
+
 });
 
 module.exports = router;

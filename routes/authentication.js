@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router({});
 const auth = require('../auth/authentication');
+const db = require('../db/mysql-connector');
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
@@ -29,7 +30,25 @@ router.route("/register").post((request, response) => {
 });
 
 router.route("/login").post((request, response) => {
-    // TODO: Check if the users exists and return the token
+    // Get the username and password from the request.
+    let email = request.body.email;
+    let password = request.body.password;
+
+    console.log(email + " : " + password);
+
+    // Check in database for matching username and password.
+    db.query("SELECT * FROM user", (error, rows, fields) => {
+        return JSON.stringify(rows.filter(function (user) {
+            if (user.Email === email && user.Password === password) {
+                response.status(200)
+                    .json({
+                        token: auth.encodeToken(email),
+                        username: email
+                    });
+            }
+        }));
+    });
+
 });
 
 module.exports = router;

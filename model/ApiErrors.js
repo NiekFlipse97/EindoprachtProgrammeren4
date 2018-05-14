@@ -16,4 +16,8 @@ module.exports = class ApiErrors {
     static conflict(message){
         return new ApiError(`Conflict (${message})`, 409);
     }
+
+    static other(message, code = 500){
+        return new ApiError(message, code);
+    }
 }

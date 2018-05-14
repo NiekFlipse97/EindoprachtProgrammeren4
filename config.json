@@ -5,6 +5,7 @@
         "name": "studentenhuis",
         "host": "localhost",
         "username": "studentenhuis_user",
-        "password": "secret"
+        "password": "secret",
+        "port": 3306
     }
 }

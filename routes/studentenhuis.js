@@ -5,11 +5,41 @@ const ApiErrors = require("../model/ApiErrors.js");
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
 
-function respondWithError(response, error){
-    // If the error is not an ApiError, convert it to an ApiError.
-    const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
-    // Return the error to the client
-    response.status(myError.code).json(myError);
+function respondWithError(response, error) {
+    if(error){
+        // If the error is not an ApiError, convert it to an ApiError.
+        const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
+        // Return the error to the client
+        response.status(myError.code).json(myError);
+        
+        return true; // Indicate that the error was handled
+    } else return false;
+}
+
+function getUserIDFromRequest(request, callback) {
+    // Take the token from the request
+    const token = request.header('X-Access-Token');
+    // Decode the token
+    auth.decodeToken(token, (error, payload) => {
+        if(error){ 
+            callback(ApiErrors.notAuthorised, null);
+            return;
+        }
+        
+        // Get the email from the payload/decoded token
+        const userEmail = payload.sub;
+        // Search for the user in the database by email
+        db.query(`SELECT * FROM user WHERE EMAIL = "${userEmail}"`, (error, rows, fields) => {
+            if(error){ 
+                callback(error, null);
+                return;
+            }
+
+            const user = rows[0];
+            // Send the userID to the callback
+            callback(null, user.ID);
+        });
+    });
 }
 
 class CheckObjects {
@@ -41,7 +71,7 @@ class CheckObjects {
 router.route("/").get((request, response) => {
     try {
         db.query(`SELECT * FROM view_studentenhuis`, (error, rows, fields) => {
-            if(error) throw error;
+            if(respondWithError(response, error)) return;
             
             // Replace all items in the list with the correct object
             const studentenHuizen = rows.map((item) => {
@@ -54,7 +84,7 @@ router.route("/").get((request, response) => {
                 };
             });
             response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
-        })
+        });
     } catch (error){
         respondWithError(response, error); // Return the error to the client
     }
@@ -66,14 +96,30 @@ router.route("/").post((request, response) => {
 
         if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
-        
-        /**
-        * Maak een nieuw studentenhuis. 
-        * De ID van de gebruiker die het studentenhuis aanmaakt wordt bij het studentenhuis opgeslagen. 
-        * Deze ID haal je uit het JWT token. 
-        * De correctheid van de informatie die wordt gegeven moet door de server gevalideerd worden. 
-        * Bij ontbrekende of foutieve invoer wordt een juiste foutmelding geretourneerd. 
-        */
+
+        getUserIDFromRequest(request, (error, userID) => {
+            if(respondWithError(response, error)) return;
+
+            db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
+                if(respondWithError(response, error)) return;
+                
+                db.query(`SELECT * FROM view_studentenhuis WHERE Naam = "${studentenhuis.naam}" AND Adres = "${studentenhuis.adres}"`, (error, rows, fields) => {
+                    if(respondWithError(response, error)) return;
+                    
+                    // Replace all items in the list with the correct object
+                    const studentenHuizen = rows.map((item) => {
+                        return {
+                            ID: item.ID,
+                            naam: item.Naam,
+                            adres: item.Adres,
+                            contact: item.Contact,
+                            email: item.Email
+                        };
+                    });
+                    response.status(200).json(studentenHuizen[0]); // Return a list of all student houses with code 200 (OK)
+                });
+            });
+        });
 
     } catch (error){
         respondWithError(response, error);

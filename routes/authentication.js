@@ -31,7 +31,7 @@ function login(email, password, callback){
         else if(rows.length == 0) callback(ApiErrors.wrongRequestBodyProperties, null);
         else callback(null, {
             token: auth.encodeToken(email),
-            username: email
+            email: email
         });
     });
 }

@@ -1,24 +1,23 @@
 const mysql = require('mysql');
 const config = require('../config');
 
-let db = mysql.createConnection(
-    {
-        host: config.database.host,
-        user: config.database.username,
-        password: config.database.password,
-        database: config.database.name,
-        insecureAuth : true
-    }
-);
+const dbConfig = {
+    host: process.env.DB_DATABASE || config.database.host,
+    user: process.env.DB_USER || config.database.username,
+    password: process.env.DB_PASSWORD || config.database.password,
+    database: process.env.DB_NAME || config.database.name
+};
+
+const db = mysql.createConnection({
+    host: dbConfig.host,
+    user: dbConfig.username,
+    password: dbConfig.password,
+    database: dbConfig.name,
+    insecureAuth : true
+});
 
 db.connect((error) => {
-    if (error) {
-        console.log(error);
-        return;
-    } else {
-        console.log("Connected to " + config.database.host + ":" + config.database.name);
-    }
-
+    console.log(error ? error : `Connected to ${dbConfig.host}:${dbConfig.name}`);
 });
 
 module.exports = db;

@@ -82,7 +82,7 @@ module.exports = class DBManager {
     }
 
     updateStudenthouse(studentenhuis, huisID, userID, callback){
-        this._db.query(`UPDATE studentenhuis SET Naam = ${studentenhuis.naam}, Adres = ${studentenhuis.adres} WHERE ID = ${huisID} AND UserID = ${userID}`, (error, rows, fields) => {
+        this._db.query(`UPDATE studentenhuis SET Naam = "${studentenhuis.naam}", Adres = "${studentenhuis.adres}" WHERE ID = ${huisID} AND UserID = ${userID}`, (error, rows, fields) => {
             callback(error, null);
         });
     }

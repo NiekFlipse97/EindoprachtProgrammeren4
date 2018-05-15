@@ -1,12 +1,13 @@
 const mysql = require('mysql');
 const config = require('../config');
 
-const dbConfig = {
-    host: process.env.DB_DATABASE || config.database.host,
-    user: process.env.DB_USER || config.database.username,
-    password: process.env.DB_PASSWORD || config.database.password,
-    database: process.env.DB_NAME || config.database.name
-};
+// When the variabeles in process.env are set (config vars in Heroku), use them instead of config.json
+const dbConfig = process.env.DB_DATABASE && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_NAME ? {
+    host: process.env.DB_DATABASE,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+} : config.database;
 
 const db = mysql.createConnection({
     host: dbConfig.host,

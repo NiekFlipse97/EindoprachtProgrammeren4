@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
+
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
+
+const StudentenhuisResponse = require("../model/StudentenhuisResponse.js");
+
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
 
@@ -74,15 +78,7 @@ router.route("/").get((request, response) => {
             if(respondWithError(response, error)) return;
             
             // Replace all items in the list with the correct object
-            const studentenHuizen = rows.map((item) => {
-                return {
-                    ID: item.ID,
-                    naam: item.Naam,
-                    adres: item.Adres,
-                    contact: item.Contact,
-                    email: item.Email
-                };
-            });
+            const studentenHuizen = rows.map((item) => StudentenhuisResponse.fromDatabaseObject(item));
             response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
         });
     } catch (error){
@@ -106,17 +102,10 @@ router.route("/").post((request, response) => {
                 db.query(`SELECT * FROM view_studentenhuis WHERE Naam = "${studentenhuis.naam}" AND Adres = "${studentenhuis.adres}"`, (error, rows, fields) => {
                     if(respondWithError(response, error)) return;
                     
-                    // Replace all items in the list with the correct object
-                    const studentenHuizen = rows.map((item) => {
-                        return {
-                            ID: item.ID,
-                            naam: item.Naam,
-                            adres: item.Adres,
-                            contact: item.Contact,
-                            email: item.Email
-                        };
-                    });
-                    response.status(200).json(studentenHuizen[0]); // Return a list of all student houses with code 200 (OK)
+                    // Get first result (there should be only 1 result)
+                    const studentenhuis = rows[0];
+                    // Create a StudentenhuisResponse from the DB result and return it
+                    response.status(200).json(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
                 });
             });
         });
@@ -128,16 +117,22 @@ router.route("/").post((request, response) => {
 
 router.route("/:huisId?").get((request, response) => {
     try { 
-        const huisId = request.params.huisId;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        /**
-         * @return het studentenhuis met de gegeven huisId. 
-         * Iedere gebruiker kan alle studentenhuizen opvragen. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd.
-         * 
-         * @throws ApiErrors.notFound("huisId")
-         */
+        db.query(`SELECT * FROM view_studentenhuis WHERE ID = ${huisId}`, (error, rows, fields) => {
+            if(respondWithError(response, error)) return;
 
+            if(rows.length == 0){
+                respondWithError(response, ApiErrors.notFound("huisId"));
+                return;
+            }
+            
+            // Get first result (there should be only 1 result)
+            const studentenhuis = rows[0];
+            // Create a StudentenhuisResponse from the DB result and return it
+            response.status(200).json(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
+        });
     } catch (error){
         respondWithError(response, error);
     }

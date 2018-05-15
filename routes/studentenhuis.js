@@ -310,7 +310,6 @@ router.route("/:huisId/maaltijd/:maaltijdId").put((request, response) => {
                 respondWithError(response, error);
             } else {
                 dbManager.getMealFromID(maaltijdId, (error, maaltijd2) => {
-                    console.log("Maaltijd2 : " + maaltijd2);
                     if (error) {
                         respondWithError(response, error);
                     } else if (maaltijd2.UserID != id) {

@@ -94,7 +94,6 @@ module.exports = class DBManager {
     }
 
     getMealFromID(mealId, callback) {
-        console.log("Doe ik dit 2 keer?!");
         this._db.query("SELECT * FROM maaltijd WHERE ID = ?", [mealId], (error, rows, fields) => {
             try {
                 if(error) throw error;
@@ -103,10 +102,8 @@ module.exports = class DBManager {
                 // Get first result (there should be only 1 result)
                 const meal = rows[0];
                 // Create a Maaltijdresponse from the DB result and return it
-                console.log("Meal == " + meal);
                 callback(null, meal);
             } catch (error) {
-                console.log("Kom ik in de catch?!");
                 callback(error, null);
             }
         })

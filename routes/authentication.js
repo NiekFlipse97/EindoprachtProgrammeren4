@@ -36,12 +36,41 @@ function login(email, password, callback){
     });
 }
 
+class CheckObjects {
+    // Returns true if the given object is a valid login
+    static isValidLogin(object){
+        const tmp = 
+            object && typeof object == "object" && 
+            object.email && typeof object.email == "string" && 
+            object.password && typeof object.password == "string";
+        return tmp;
+    }
+
+    // Returns true if the given object is a valid register
+    static isValidRegistration(object){
+        const tmp = 
+            object && typeof object == "object" && 
+            object.firstName && typeof object.firstName == "string" && 
+            object.lastName && typeof object.lastName == "string" &&
+            object.email && typeof object.email == "string" &&
+            object.password && typeof object.password == "string";
+        
+        return tmp;
+    }
+}
+
 router.route("/register").post((request, response) => {
+    const registration = request.body;
+    if(!CheckObjects.isValidRegistration(registration)){
+        const error = ApiErrors.wrongRequestBodyProperties;
+        response.status(error.code).json(error);
+        return;
+    }
     // Get the users information to store in the database.
-    const firstName = request.body.firstname;
-    const lastName = request.body.lastname;
-    const email = request.body.email;
-    const password = request.body.password;
+    const firstName = registration.firstname;
+    const lastName = registration.lastname;
+    const email = registration.email;
+    const password = registration.password;
 
     // Create the query that will be executed.
     const query = {
@@ -68,9 +97,15 @@ router.route("/register").post((request, response) => {
 });
 
 router.route("/login").post((request, response) => {
+    const login = request.body;
+    if(!CheckObjects.isValidLogin(login)){
+        const error = ApiErrors.wrongRequestBodyProperties;
+        response.status(error.code).json(error);
+        return;
+    }
     // Get the username and password from the request.
-    const email = request.body.email;
-    const password = request.body.password;
+    const email = login.email;
+    const password = login.password;
 
     // Check in database for matching username and password.
     login(email, password, (error, result) => {

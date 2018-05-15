@@ -3,6 +3,7 @@ const router = express.Router();
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
 const db = require('../db/mysql-connector');
+const auth = require('../auth/authentication');
 
 function respondWithError(response, error) {
     // If the error is not an ApiError, convert it to an ApiError.
@@ -27,7 +28,7 @@ class CheckObjects {
             object.naam && typeof object.naam == "string" &&
             object.beschrijving && typeof object.beschrijving == "string" &&
             object.ingredienten && typeof object.ingredienten == "string" &&
-            object.allergie && typeof object.allergie == "string" &&
+                object.allergie && typeof object.allergie == "string" &&
             object.prijs && typeof object.prijs == "number";
 
         return tmp;
@@ -165,10 +166,13 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijd = request.body;
+        const token = request.header('X-Access-Token');
 
+        console.log("Voor maaltijd check");
         if (!CheckObjects.isMaaltijd(maaltijd))
             throw ApiErrors.wrongRequestBodyProperties;
 
+        console.log("na maaltijd check");
         /**
          * Maak een nieuwe maaltijd voor een studentenhuis.
          * De ID van de gebruiker die de maaltijd aanmaakt wordt opgeslagen bij de maaltijd.
@@ -179,6 +183,30 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
          *
          * @throws ApiErrors.notFound("huisId")
          */
+        auth.decodeToken(token, (error, payload) => {
+            let email = payload.sub;
+
+            db.query("SELECT ID FROM user WHERE Email = ?", [email], (error, rows, fields) => {
+                let userId = rows[0].ID;
+
+                db.query("SELECT * FROM studentenhuis WHERE ID = ?", [huisId], (error, r, f) => {
+                    if (r.length < 1) {
+                        response.join({
+                            error: "Studentenhuis not found"
+                        })
+                    }
+
+                    db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
+                        if (err) throw err;
+                        db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result, ){
+                            if (err) throw err;
+                            response.json(result)
+                        })
+                    });
+                })
+            })
+        });
+
 
     } catch (error) {
         respondWithError(response, error);

@@ -7,14 +7,14 @@ module.exports = class DBManager {
     }
 
     getUserIDFromEmail(email, callback){
-        _db.query(`SELECT * FROM user WHERE EMAIL = "${userEmail}"`, (error, rows, fields) => {
+        this._db.query(`SELECT * FROM user WHERE Email = "${email}"`, (error, rows, fields) => {
             if(error) callback(error, null);
             else callback(null, rows[0].ID);
         });
     }
 
     getStudenthouseResponses(callback){
-        _db.query(`SELECT * FROM view_studentenhuis`, (error, rows, fields) => {
+        this._db.query(`SELECT * FROM view_studentenhuis`, (error, rows, fields) => {
             try {
                 if(error) throw error;
 
@@ -28,7 +28,7 @@ module.exports = class DBManager {
     }
     
     getStudenthouseResponseFromNameAndAdress(name, adress, callback){
-        _db.query(`SELECT * FROM view_studentenhuis WHERE Naam = "${name}" AND Adres = "${adress}"`, (error, rows, fields) => {
+        this._db.query(`SELECT * FROM view_studentenhuis WHERE Naam = "${name}" AND Adres = "${adress}"`, (error, rows, fields) => {
             try {
                 if(error) throw error;
                 if(rows.length == 0) throw ApiErrors.notFound("huisId");
@@ -36,7 +36,7 @@ module.exports = class DBManager {
                 // Get first result (there should be only 1 result)
                 const studentenhuis = rows[0];
                 // Create a StudentenhuisResponse from the DB result and return it
-                callback(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
+                callback(null, StudentenhuisResponse.fromDatabaseObject(studentenhuis));
             } catch (error) {
                 callback(error, null)
             }
@@ -44,7 +44,7 @@ module.exports = class DBManager {
     }
 
     getStudenthouseResponseFromID(id, callback){
-        _db.query(`SELECT * FROM view_studentenhuis WHERE ID = ${id}`, (error, rows, fields) => {
+        this._db.query(`SELECT * FROM view_studentenhuis WHERE ID = ${id}`, (error, rows, fields) => {
             try {
                 if(error) throw error;
                 if(rows.length == 0) throw ApiErrors.notFound("huisId");
@@ -52,7 +52,7 @@ module.exports = class DBManager {
                 // Get first result (there should be only 1 result)
                 const studentenhuis = rows[0];
                 // Create a StudentenhuisResponse from the DB result and return it
-                callback(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
+                callback(null, StudentenhuisResponse.fromDatabaseObject(studentenhuis));
             } catch (error) {
                 callback(error, null)
             }
@@ -60,7 +60,7 @@ module.exports = class DBManager {
     }
 
     getStudenthouseFromID(id, callback){
-        _db.query(`SELECT * FROM studentenhuis WHERE ID = ${id}`, (error, rows, fields) => {
+        this._db.query(`SELECT * FROM studentenhuis WHERE ID = ${id}`, (error, rows, fields) => {
             try {
                 if(error) throw error;
                 if(rows.length == 0) throw ApiErrors.notFound("huisId");
@@ -68,21 +68,21 @@ module.exports = class DBManager {
                 // Get first result (there should be only 1 result)
                 const studentenhuis = rows[0];
                 // Create a StudentenhuisResponse from the DB result and return it
-                callback(studentenhuis);
+                callback(null, studentenhuis);
             } catch (error) {
                 callback(error, null)
             }
         });
     }
 
-    updateStudenthouse(studentenhuis, huisId, userID, callback){
-        _db.query(`UPDATE studentenhuis SET Naam = ${studentenhuis.naam}, Adres = ${studentenhuis.adres} WHERE ID = ${huisId} AND UserID = ${userID}`, (error, rows, fields) => {
+    updateStudenthouse(studentenhuis, huisID, userID, callback){
+        this._db.query(`UPDATE studentenhuis SET Naam = ${studentenhuis.naam}, Adres = ${studentenhuis.adres} WHERE ID = ${huisID} AND UserID = ${userID}`, (error, rows, fields) => {
             callback(error, null);
         });
     }
 
     insertStudenthouse(studentenhuis, userID, callback){
-        _db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
+        this._db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
             callback(error, null);
         });
     }

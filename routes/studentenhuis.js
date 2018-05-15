@@ -90,7 +90,6 @@ router.route("/").post((request, response) => {
                 })
             })
         });
-
     } catch (error){
         respondWithError(response, error);
     }
@@ -101,7 +100,7 @@ router.route("/:huisId?").get((request, response) => {
         const huisId = Number(request.params.huisId);
         if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        dbManager.getStudenthouseResponseFromID(huisID, (error, studentenhuis) => {
+        dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
             if(error) respondWithError(response, error);
             else response.status(200).json(studentenhuis);
         });
@@ -124,19 +123,18 @@ router.route("/:huisId?").put((request, response) => {
             else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
                 if(error)
                     respondWithError(response, error);
-                else if(studentenhuis2.UserID != userID) 
+                else if(studentenhuis2.UserID != userID) // Check if user is creator of this house
                     respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
-                else 
+                else // Update house
                     dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
                         if(error) respondWithError(response, error);
                         else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
                             if(error) respondWithError(response, error);
-                            else response.status(200).json(studentenhuis);
+                            else response.status(200).json(studentenhuis); // return the house as result
                     });
                 });
             })
         });
-        
     } catch (error){
         respondWithError(response, error);
     }

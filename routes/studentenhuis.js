@@ -16,6 +16,8 @@ function respondWithError(response, error) {
         const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
         // Return the error to the client
         response.status(myError.code).json(myError);
+        // Log the error
+        console.log(`Oops! An error appeared: ${JSON.stringify(myError)}`)
     }
 }
 

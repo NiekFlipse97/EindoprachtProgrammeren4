@@ -80,10 +80,14 @@ router.route("/register").post(function(request, response){
                     })
                 }
             });
+        } else {
+            response.json({
+                msg: "Email is not valid"
+            })
         }
     } else {
         response.json({
-            msg: "oops"
+            msg: "A property in the request body is not valid"
         })
     }
 
@@ -91,22 +95,28 @@ router.route("/register").post(function(request, response){
 
 router.route("/login").post((request, response) => {
     // Get the username and password from the request.
-    const email = request.body.email;
-    const password = request.body.password;
+    let email = request.body.email;
+    let password = request.body.password;
 
-    // Check in database for matching username and password.
-    db.query("SELECT * FROM user", (error, rows, fields) => {
-        JSON.stringify(rows.filter(function (user) {
-            if (user.Email === email && user.Password === password) {
-                response.status(200)
-                    .json({
-                        token: auth.encodeToken(email),
-                        username: email
-                    });
-            }
-        }));
-    });
-
+    // Check if email is valid
+    if (regexEmail.test(email) === true) {
+        // Check in database for matching username and password.
+        db.query("SELECT * FROM user", (error, rows, fields) => {
+            JSON.stringify(rows.filter(function (user) {
+                if (user.Email === email && user.Password === password) {
+                    response.status(200)
+                        .json({
+                            token: auth.encodeToken(email),
+                            username: email
+                        });
+                }
+            }));
+        });
+    } else {
+        response.json({
+            msg: "Email is not valid"
+        })
+    }
 });
 
 module.exports = router;

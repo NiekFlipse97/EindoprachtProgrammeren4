@@ -273,17 +273,49 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
+        const token = request.header('X-Access-Token');
 
         /**
          * Verwijder de maaltijd met het gegeven maaltijdId.
          * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * Alleen de gebruiker die de maaltijd heeft aangemaakt kan deze wijzigen.
+         * Alleen de gebruiker die de maaltijd heeft aangemaakt kan deze verwijderen.
          * De ID van de gebruiker haal je uit het JWT token.
          *
          * @return {}
          * @throws ApiErrors.notFound("huisId of maaltijdId")
          * @throws ApiErrors.conflict("Gebruiker mag deze data niet verwijderen")
          */
+
+        auth.decodeToken(token, (error, payload) => {
+            db.query("SELECT ID FROM user WHERE Email = ?", [payload.sub], (error, rows, fields) => {
+                checkHouseId(huisId, response);
+
+                db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, r, f) => {
+                    if (r.length < 1) {
+                        response.json({
+                            error: `Maaltijd met id: ${maaltijdId} bestaat niet`
+                        })
+                    }
+
+                    console.log(r[0].UserID + " : " + rows[0].ID);
+                    if (r[0].UserID === rows[0].ID) {
+                        db.query("DELETE FROM maaltijd WHERE ID = ?", [maaltijdId], (error, result) => {
+                            response.json({
+                                msg: "Maaltijd succesvol verwijderd"
+                            })
+                        })
+                    } else {
+                        response.json({
+                            error: "id is not matching"
+                        })
+                    }
+                })
+            })
+        });
+
+
+
+
 
     } catch (error) {
         respondWithError(response, error);

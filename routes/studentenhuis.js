@@ -1,12 +1,39 @@
 const express = require("express");
 const router = express.Router();
+
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
 
-function respondWithError(response, error){
-    // If the error is not an ApiError, convert it to an ApiError.
-    const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
-    response.status(myError.code).json(myError);
+const auth = require('../auth/authentication');
+
+const db = require('../db/mysql-connector');
+const DBManager = require('../db/dbmanager.js');
+const dbManager = new DBManager(db);
+
+function respondWithError(response, error) {
+    if(error){
+        // If the error is not an ApiError, convert it to an ApiError.
+        const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
+        // Return the error to the client
+        response.status(myError.code).json(myError);
+    }
+}
+
+function getUserIDFromRequest(request, callback) {
+    // Take the token from the request
+    const token = request.header('X-Access-Token');
+    // Decode the token
+    auth.decodeToken(token, (error, payload) => {
+        if(error){ 
+            callback(ApiErrors.notAuthorised, null);
+            return;
+        }
+        
+        // Get the email from the payload/decoded token
+        const userEmail = payload.sub;
+        // Search for the user in the database by email
+        dbManager.getUserIDFromEmail(userEmail, callback);
+    });
 }
 
 class CheckObjects {
@@ -36,10 +63,14 @@ class CheckObjects {
 // Studentenhuis
 
 router.route("/").get((request, response) => {
-    /**
-     * @return een lijst met alle studentenhuizen. 
-     * Iedere gebruiker kan alle studentenhuizen opvragen. 
-     */
+    try {
+        dbManager.getStudenthouseResponses((error, studentenHuizen) => {
+            if(error) respondWithError(response, error);
+            else response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
+        });
+    } catch (error){
+        respondWithError(response, error); // Return the error to the client
+    }
 });
 
 router.route("/").post((request, response) => {
@@ -48,15 +79,17 @@ router.route("/").post((request, response) => {
 
         if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
-        
-        /**
-        * Maak een nieuw studentenhuis. 
-        * De ID van de gebruiker die het studentenhuis aanmaakt wordt bij het studentenhuis opgeslagen. 
-        * Deze ID haal je uit het JWT token. 
-        * De correctheid van de informatie die wordt gegeven moet door de server gevalideerd worden. 
-        * Bij ontbrekende of foutieve invoer wordt een juiste foutmelding geretourneerd. 
-        */
 
+        getUserIDFromRequest(request, (error, userID) => {
+            if(error) respondWithError(response, error);
+            else dbManager.insertStudenthouse(studentenhuis, userID, (error, result) => {
+                if(error) respondWithError(response, error);
+                else dbManager.getStudenthouseResponseFromNameAndAdress(studentenhuis.naam, studentenhuis.adres, (error, studentenhuis) => {
+                    if(error) respondWithError(response, error);
+                    else response.status(200).json(studentenhuis);
+                })
+            })
+        });
     } catch (error){
         respondWithError(response, error);
     }
@@ -64,16 +97,13 @@ router.route("/").post((request, response) => {
 
 router.route("/:huisId?").get((request, response) => {
     try { 
-        const huisId = request.params.huisId;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        /**
-         * @return het studentenhuis met de gegeven huisId. 
-         * Iedere gebruiker kan alle studentenhuizen opvragen. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd.
-         * 
-         * @throws ApiErrors.notFound("huisId")
-         */
-
+        dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
+            if(error) respondWithError(response, error);
+            else response.status(200).json(studentenhuis);
+        });
     } catch (error){
         respondWithError(response, error);
     }
@@ -81,24 +111,31 @@ router.route("/:huisId?").get((request, response) => {
 
 router.route("/:huisId?").put((request, response) => {
     try {
-        const huisId = request.params.huisId;
-        const studentenhuis = request.body;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
+        const studentenhuis = request.body;
         if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
 
-        /**
-         * Vervang het studentenhuis met de gegeven huisId door de informatie van het studentenhuis dat in de body is meegestuurd. 
-         * Alleen de gebruiker die het studentenhuis heeft aangemaakt mag de informatie van dat studenenhuis wijzigen. 
-         * Deze ID haal je uit het JWT token. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd. 
-         * De correctheid van de informatie die wordt gegeven moet door de server gevalideerd worden. 
-         * Bij ontbrekende of foutieve invoer wordt een juiste foutmelding geretourneerd.
-         * 
-         * @throws ApiErrors.notFound("huisId")
-         * @throws ApiErrors.conflict("Gebruiker mag deze data niet wijzigen")
-         */
-
+        getUserIDFromRequest(request, (error, userID) => {
+            if(error) respondWithError(response, error);
+            else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
+                if(error) {
+                    respondWithError(response, error);
+                } else if (studentenhuis2.UserID != userID) { // Check if user is creator of this house
+                    respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
+                } else { // Update house
+                    dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
+                        if(error) respondWithError(response, error);
+                        else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
+                            if(error) respondWithError(response, error);
+                            else response.status(200).json(studentenhuis); // return the house as result
+                        });
+                    });
+                }
+            });
+        });
     } catch (error){
         respondWithError(response, error);
     }
@@ -106,19 +143,24 @@ router.route("/:huisId?").put((request, response) => {
 
 router.route("/:huisId?").delete((request, response) => {
     try {
-        const huisId = request.params.huisId;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        /**
-         * Verwijder het studentenhuis met de gegeven huisId. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd. 
-         * Een gebruiker kan alleen een studentenhuis verwijderen als hij dat zelf heeft aangemaakt. 
-         * Deze ID haal je uit het JWT token. 
-         * 
-         * @return {}
-         * @throws ApiErrors.notFound("huisId")
-         * @throws ApiErrors.conflict("Gebruiker mag deze data niet verwijderen")
-         */
-
+        getUserIDFromRequest(request, (error, userID) => {
+            if(error) respondWithError(response, error);
+            else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis) => {
+                if(error) {
+                    respondWithError(response, error);
+                } else if(studentenhuis.UserID != userID) { // Check if user is creator of this house
+                    respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet verwijderen"));
+                } else { // Delete house
+                    dbManager.deleteStudenthouse(huisId, userID, (error, result) => {
+                        if(error) respondWithError(response, error);
+                        else response.status(200).json({});
+                    });
+                }
+            });
+        });
     } catch (error) {
         respondWithError(response, error);
     }

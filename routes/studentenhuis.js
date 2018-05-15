@@ -4,10 +4,11 @@ const router = express.Router();
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
 
-const StudentenhuisResponse = require("../model/StudentenhuisResponse.js");
-
 const auth = require('../auth/authentication');
+
 const db = require('../db/mysql-connector');
+const DBManager = require('../db/dbmanager.js');
+const dbManager = new DBManager(db);
 
 function respondWithError(response, error) {
     if(error){
@@ -33,16 +34,7 @@ function getUserIDFromRequest(request, callback) {
         // Get the email from the payload/decoded token
         const userEmail = payload.sub;
         // Search for the user in the database by email
-        db.query(`SELECT * FROM user WHERE EMAIL = "${userEmail}"`, (error, rows, fields) => {
-            if(error){ 
-                callback(error, null);
-                return;
-            }
-
-            const user = rows[0];
-            // Send the userID to the callback
-            callback(null, user.ID);
-        });
+        dbManager.getUserIDFromEmail(userEmail, callback);
     });
 }
 
@@ -74,12 +66,9 @@ class CheckObjects {
 
 router.route("/").get((request, response) => {
     try {
-        db.query(`SELECT * FROM view_studentenhuis`, (error, rows, fields) => {
-            if(respondWithError(response, error)) return;
-            
-            // Replace all items in the list with the correct object
-            const studentenHuizen = rows.map((item) => StudentenhuisResponse.fromDatabaseObject(item));
-            response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
+        dbManager.getStudenthouseResponses((error, studentenHuizen) => {
+            if(error) respondWithError(response, error);
+            else response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
         });
     } catch (error){
         respondWithError(response, error); // Return the error to the client
@@ -96,18 +85,13 @@ router.route("/").post((request, response) => {
         getUserIDFromRequest(request, (error, userID) => {
             if(respondWithError(response, error)) return;
 
-            db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
-                if(respondWithError(response, error)) return;
-                
-                db.query(`SELECT * FROM view_studentenhuis WHERE Naam = "${studentenhuis.naam}" AND Adres = "${studentenhuis.adres}"`, (error, rows, fields) => {
-                    if(respondWithError(response, error)) return;
-                    
-                    // Get first result (there should be only 1 result)
-                    const studentenhuis = rows[0];
-                    // Create a StudentenhuisResponse from the DB result and return it
-                    response.status(200).json(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
-                });
-            });
+            dbManager.insertStudenthouse(studentenhuis, userID, (error, result) => {
+                if(error) respondWithError(response, error);
+                else dbManager.getStudenthouseResponseFromNameAndAdress(studentenhuis.naam, studentenhuis.adres, (error, studentenhuis) => {
+                    if(error) respondWithError(response, error);
+                    else response.status(200).json(studentenhuis);
+                })
+            })
         });
 
     } catch (error){
@@ -120,18 +104,9 @@ router.route("/:huisId?").get((request, response) => {
         const huisId = Number(request.params.huisId);
         if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        db.query(`SELECT * FROM view_studentenhuis WHERE ID = ${huisId}`, (error, rows, fields) => {
-            if(respondWithError(response, error)) return;
-
-            if(rows.length == 0){
-                respondWithError(response, ApiErrors.notFound("huisId"));
-                return;
-            }
-            
-            // Get first result (there should be only 1 result)
-            const studentenhuis = rows[0];
-            // Create a StudentenhuisResponse from the DB result and return it
-            response.status(200).json(StudentenhuisResponse.fromDatabaseObject(studentenhuis));
+        dbManager.getStudenthouseResponseFromID(huisID, (error, studentenhuis) => {
+            if(error) respondWithError(response, error);
+            else response.status(200).json(studentenhuis);
         });
     } catch (error){
         respondWithError(response, error);
@@ -140,24 +115,37 @@ router.route("/:huisId?").get((request, response) => {
 
 router.route("/:huisId?").put((request, response) => {
     try {
-        const huisId = request.params.huisId;
-        const studentenhuis = request.body;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
+        const studentenhuis = request.body;
         if(!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
 
-        /**
-         * Vervang het studentenhuis met de gegeven huisId door de informatie van het studentenhuis dat in de body is meegestuurd. 
-         * Alleen de gebruiker die het studentenhuis heeft aangemaakt mag de informatie van dat studenenhuis wijzigen. 
-         * Deze ID haal je uit het JWT token. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd. 
-         * De correctheid van de informatie die wordt gegeven moet door de server gevalideerd worden. 
-         * Bij ontbrekende of foutieve invoer wordt een juiste foutmelding geretourneerd.
-         * 
-         * @throws ApiErrors.notFound("huisId")
-         * @throws ApiErrors.conflict("Gebruiker mag deze data niet wijzigen")
-         */
+        getUserIDFromRequest(request, (error, userID) => {
+            if(respondWithError(response, error)) return;
 
+            dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
+                if(error){
+                    respondWithError(response, error);
+                    return;
+                }
+
+                if(studentenhuis2.UserID != userID){
+                    respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
+                    return;
+                }
+
+                dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
+                    if(error) respondWithError(response, error);
+                    else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
+                        if(error) respondWithError(response, error);
+                        else response.status(200).json(studentenhuis);
+                    });
+                });
+            })
+        });
+        
     } catch (error){
         respondWithError(response, error);
     }

@@ -97,15 +97,15 @@ router.route("/register").post((request, response) => {
 });
 
 router.route("/login").post((request, response) => {
-    const login = request.body;
-    if(!CheckObjects.isValidLogin(login)){
+    const loginObject = request.body;
+    if(!CheckObjects.isValidLogin(loginObject)){
         const error = ApiErrors.wrongRequestBodyProperties;
         response.status(error.code).json(error);
         return;
     }
     // Get the username and password from the request.
-    const email = login.email;
-    const password = login.password;
+    const email = loginObject.email;
+    const password = loginObject.password;
 
     // Check in database for matching username and password.
     login(email, password, (error, result) => {

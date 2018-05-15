@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
+const auth = require('../auth/authentication');
+const db = require('../db/mysql-connector');
 
 function respondWithError(response, error){
     // If the error is not an ApiError, convert it to an ApiError.
     const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
+    // Return the error to the client
     response.status(myError.code).json(myError);
 }
 
@@ -36,10 +39,25 @@ class CheckObjects {
 // Studentenhuis
 
 router.route("/").get((request, response) => {
-    /**
-     * @return een lijst met alle studentenhuizen. 
-     * Iedere gebruiker kan alle studentenhuizen opvragen. 
-     */
+    try {
+        db.query(`SELECT * FROM view_studentenhuis`, (error, rows, fields) => {
+            if(error) throw error;
+            
+            // Replace all items in the list with the correct object
+            const studentenHuizen = rows.map((item) => {
+                return {
+                    ID: item.ID,
+                    naam: item.Naam,
+                    adres: item.Adres,
+                    contact: item.Contact,
+                    email: item.Email
+                };
+            });
+            response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
+        })
+    } catch (error){
+        respondWithError(response, error); // Return the error to the client
+    }
 });
 
 router.route("/").post((request, response) => {

@@ -182,10 +182,15 @@ router.route("/:huisId/maaltijd").get((request, response) => {
          */
 
         db.query("SELECT * FROM maaltijd WHERE StudentenhuisID = ? ", [huisId], (error, rows, fields) => {
+            if (error) {
+                response.status(error.code).json(JSON.stringify(error.message));
+                return;
+            }
+
             if (rows.length < 1) {
-                response.json({
-                    error: "Huisid bestaat niet"
-                })
+                const error = ApiErrors.notFound("huisId");
+                response.status(error.code).json(error);
+                return;
             }
 
             for (let i = 0; i < rows.length; i++) {
@@ -209,11 +214,12 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
         const maaltijd = request.body;
         const token = request.header('X-Access-Token');
 
-        console.log("Voor maaltijd check");
-        if (!CheckObjects.isMaaltijd(maaltijd))
-            throw ApiErrors.wrongRequestBodyProperties;
+        if (!CheckObjects.isMaaltijd(maaltijd)){
+            const error = ApiErrors.wrongRequestBodyProperties;
+            response.status(error.code).json(error);
+            return;
+        }
 
-        console.log("na maaltijd check");
         /**
          * Maak een nieuwe maaltijd voor een studentenhuis.
          * De ID van de gebruiker die de maaltijd aanmaakt wordt opgeslagen bij de maaltijd.
@@ -233,16 +239,20 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
                 checkHouseId(huisId, response);
 
                 db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
-                    if (err) throw err;
+                    if (err) {
+                        response.status(err.status).json(JSON.stringify(err.message));
+                        return;
+                    }
                     db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result, ){
-                        if (err) throw err;
+                        if (err) {
+                            response.status(err.status).json(JSON.stringify(err.message));
+                            return;
+                        }
                         response.json(result)
                     })
                 });
             })
         });
-
-
     } catch (error) {
         respondWithError(response, error);
     }
@@ -263,9 +273,9 @@ router.route("/:huisId?/maaltijd/:maaltijdId").get((request, response) => {
 
         db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, rows, fields) => {
             if (rows.length < 1) {
-                response.json({
-                    error: `Maaltijd met id ${maaltijdId} bestaat niet`
-                })
+                const error = ApiErrors.notFound("maaltijdId");
+                response.status(error.code).json(error);
+                return;
             }
 
             for (let i = 0; i < rows.length; i++) {
@@ -284,7 +294,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId").get((request, response) => {
     }
 });
 
-router.route("/:huisId?/maaltijd/:maaltijdId?").put((request, response) => {
+router.route("/:huisId/maaltijd/:maaltijdId").put((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
@@ -293,18 +303,31 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").put((request, response) => {
         if (!CheckObjects.isMaaltijd(maaltijd))
             throw ApiErrors.wrongRequestBodyProperties;
 
-        /**
-         * Vervang de maaltijd met het gegeven maaltijdId door de nieuwe maaltijd in de request body.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * Alleen de gebruiker die de maaltijd heeft aangemaakt kan deze wijzigen.
-         * De ID van de gebruiker haal je uit het JWT token.
-         * De correctheid van de informatie die wordt gegeven moet door de server gevalideerd worden.
-         * Bij ontbrekende of foutieve invoer wordt een juiste foutmelding geretourneerd.
-         *
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         * @throws ApiErrors.conflict("Gebruiker mag deze data niet wijzigen")
-         */
+        checkHouseId(huisId, response);
 
+        getUserIDFromRequest(request, (error, id) => {
+            if (error) {
+                respondWithError(response, error);
+            } else {
+                dbManager.getMealFromID(maaltijdId, (error, maaltijd2) => {
+                    console.log("Maaltijd2 : " + maaltijd2);
+                    if (error) {
+                        respondWithError(response, error);
+                    } else if (maaltijd2.UserID != id) {
+                        respondWithError(response, ApiErrors.conflict("Gebruiker mag deze maaltijd niet wijzigen"))
+                    } else { // Update the meal
+                        dbManager.updateMeal(maaltijd, maaltijdId, id, (error, result) => {
+                            if (error) respondWithError(response, error);
+                            else dbManager.getMealResponseFromID(maaltijdId, (error, maaltijd) => {
+                                if (error) respondWithError(response, error);
+                                else response.status(200).json(maaltijd);
+                            })
+
+                        })
+                    }
+                })
+            }
+        });
     } catch (error) {
         respondWithError(response, error);
     }
@@ -332,13 +355,15 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
                 checkHouseId(huisId, response);
 
                 db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, r, f) => {
+                    if (error) {
+                        response.status(error.code).json(JSON.stringify(error.message));
+                    }
                     if (r.length < 1) {
-                        response.json({
-                            error: `Maaltijd met id: ${maaltijdId} bestaat niet`
-                        })
+                        const error = ApiErrors.notFound("maaltijdId");
+                        response.status(error.code).json(error);
+                        return;
                     }
 
-                    console.log(r[0].UserID + " : " + rows[0].ID);
                     if (r[0].UserID === rows[0].ID) {
                         db.query("DELETE FROM maaltijd WHERE ID = ?", [maaltijdId], (error, result) => {
                             response.json({
@@ -346,18 +371,12 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
                             })
                         })
                     } else {
-                        response.json({
-                            error: "id is not matching"
-                        })
+                        const error = ApiErrors.conflict("User is not allowed to delete this meal");
+                        response.status(error.code).json(error);
                     }
                 })
             })
         });
-
-
-
-
-
     } catch (error) {
         respondWithError(response, error);
     }
@@ -427,12 +446,9 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, resp
 
 function checkHouseId(houseId, res) {
     db.query("SELECT * FROM studentenhuis WHERE ID = ?", [houseId], (err, result) => {
-        if (result.length > 0) {
-            console.log("selectId")
-        } else {
-            res.json({
-                error: "Studentenhuis not found!"
-            })
+        if (result.length < 1) {
+            const error = ApiErrors.notFound("studentenhuisId");
+            res.status(error.code).json(error);
         }
     })
 }

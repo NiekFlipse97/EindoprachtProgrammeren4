@@ -189,21 +189,15 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
             db.query("SELECT ID FROM user WHERE Email = ?", [email], (error, rows, fields) => {
                 let userId = rows[0].ID;
 
-                db.query("SELECT * FROM studentenhuis WHERE ID = ?", [huisId], (error, r, f) => {
-                    if (r.length < 1) {
-                        response.join({
-                            error: "Studentenhuis not found"
-                        })
-                    }
+                checkHouseId(huisId, response);
 
-                    db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
+                db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
+                    if (err) throw err;
+                    db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result, ){
                         if (err) throw err;
-                        db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result, ){
-                            if (err) throw err;
-                            response.json(result)
-                        })
-                    });
-                })
+                        response.json(result)
+                    })
+                });
             })
         });
 
@@ -213,7 +207,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
     }
 });
 
-router.route("/:huisId?/maaltijd/:maaltijdId?").get((request, response) => {
+router.route("/:huisId?/maaltijd/:maaltijdId").get((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
@@ -223,6 +217,26 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").get((request, response) => {
          * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
          * Iedere gebruiker kan alle maaltijden van alle studentenhuizen opvragen.
          */
+
+        checkHouseId(huisId, response);
+
+        db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, rows, fields) => {
+            if (rows.length < 1) {
+                response.json({
+                    error: `Maaltijd met id ${maaltijdId} bestaat niet`
+                })
+            }
+
+            for (let i = 0; i < rows.length; i++) {
+                response.json({
+                    name: rows[i].Naam,
+                    description: rows[i].Beschrijving,
+                    ingredients: rows[i].Ingredienten,
+                    price: rows[i].Prijs
+                })
+            }
+
+        })
 
     } catch (error) {
         respondWithError(response, error);
@@ -337,5 +351,17 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, resp
         respondWithError(response, error);
     }
 });
+
+function checkHouseId(houseId, res) {
+    db.query("SELECT * FROM studentenhuis WHERE ID = ?", [houseId], (err, result) => {
+        if (result.length > 0) {
+            console.log("selectId")
+        } else {
+            res.json({
+                error: "Studentenhuis not found!"
+            })
+        }
+    })
+}
 
 module.exports = router;

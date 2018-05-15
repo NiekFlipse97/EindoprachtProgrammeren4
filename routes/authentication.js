@@ -3,6 +3,7 @@ const router = express.Router({});
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
 const ApiErrors = require("../model/ApiErrors.js");
+const regexEmail = require('regex-email');
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
@@ -24,57 +25,98 @@ router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) 
     });
 });
 
-router.route("/register").post((request, response) => {
+router.route("/register").post(function(request, response){
     // Get the users information to store in the database.
-    const firstName = request.body.firstname;
-    const lastName = request.body.lastname;
-    const email = request.body.email;
-    const password = request.body.password;
+    let firstName = request.body.firstname || '';
+    let lastName = request.body.lastname || '';
+    let email = request.body.email || '';
+    let password = request.body.password || '';
 
-    // Create the query that will be executed.
-    const query = {
-        sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
-        values: [firstName, lastName, email, password],
-        timeout: 2000
-    };
+    console.log("Firstname " + request.body.firstname);
 
-    // Execute the insert query
-    db.query(query, (error, rows, fields) => {
-        // If there is no error
-        if (! error) {
-            // Set the status to 200, and return the message 'OK!'
-            response.status(200)
-                .json({
-                    msg: 'OK!'
-                })
-        } else { // If there is an error.
-            // Set the status to 500, and return the error message.
-            response.status(500)
-                .json({
-                    error: error.toString()
-                })
+    if(firstName !== '' && lastName !== '' && email !== '' && password !== '') {r
+        console.log("in if statement");
+        if (firstName.length < 2 || lastName.length < 2) {
+            response.json({
+                "msg": "Een of meerdere verlden in de reqeust body zijn foutief.",
+                "code": 412
+            });
+            return;
         }
-    })
+
+        // Check if email is valid
+        if (regexEmail.test(email) == true) {
+            // Check if the email already exists
+            db.query("SELECT Email FROM user WHERE Email = ?", [email], (error, result) => {
+                if (result.length > 0) {
+                    response.json({
+                        msg: "Email bestaat al!"
+                    });
+                    return;
+                } else { // If the email doesn't exists, insert the user
+                    // Create the query that will be executed.
+                    const query = {
+                        sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
+                        values: [firstName, lastName, email, password],
+                        timeout: 2000
+                    };
+
+                    // Execute the insert query
+                    db.query(query, (error, rows, fields) => {
+                        // If there is no error
+                        if (! error) {
+                            // Set the status to 200, and return the message 'OK!'
+                            response.status(200)
+                                .json({
+                                    msg: 'OK!'
+                                })
+                        } else { // If there is an error.
+                            // Set the status to 500, and return the error message.
+                            response.status(500)
+                                .json({
+                                    error: error.toString()
+                                })
+                        }
+                    })
+                }
+            });
+        } else {
+            response.json({
+                msg: "Email is not valid"
+            })
+        }
+    } else {
+        response.json({
+            msg: "A property in the request body is not valid"
+        })
+    }
+
 });
 
 router.route("/login").post((request, response) => {
     // Get the username and password from the request.
-    const email = request.body.email;
-    const password = request.body.password;
+    let email = request.body.email;
+    let password = request.body.password;
 
-    // Check in database for matching username and password.
-    db.query("SELECT * FROM user", (error, rows, fields) => {
-        JSON.stringify(rows.filter(function (user) {
-            if (user.Email === email && user.Password === password) {
-                response.status(200)
-                    .json({
-                        token: auth.encodeToken(email),
-                        username: email
-                    });
-            }
-        }));
-    });
-
+    // Check if email is valid
+    if (regexEmail.test(email) === true) {
+        // Check in database for matching username and password.
+        db.query("SELECT * FROM user", (error, rows, fields) => {
+            JSON.stringify(rows.filter(function (user) {
+                if (user.Email === email && user.Password === password) {
+                    response.status(200)
+                        .json({
+                            token: auth.encodeToken(email),
+                            username: email
+                        });
+                }
+            }));
+        });
+    } else {
+        response.json({
+            msg: "Email is not valid"
+        })
+    }
 });
 
 module.exports = router;

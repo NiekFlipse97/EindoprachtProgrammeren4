@@ -5,7 +5,7 @@ const ApiErrors = require("../model/ApiErrors.js");
 
 function respondWithError(response, error){
     // If the error is not an ApiError, convert it to an ApiError.
-    const myError = error instanceof ApiError ? error : ApiErrors.other(error.toString());
+    const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
     response.status(myError.code).json(myError);
 }
 

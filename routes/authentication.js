@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
 const ApiErrors = require("../model/ApiErrors.js");
+const regexEmail = require('regex-email');
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
@@ -72,12 +73,7 @@ router.route("/register").post((request, response) => {
     const email = registration.email;
     const password = registration.password;
 
-    // Create the query that will be executed.
-    const query = {
-        sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
-        values: [firstName, lastName, email, password],
-        timeout: 2000
-    };
+    console.log("Firstname " + request.body.firstname);
 
     // Execute the insert query
     db.query(query, (error, rows, fields) => {

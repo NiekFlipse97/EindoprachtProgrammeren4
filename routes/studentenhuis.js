@@ -16,9 +16,7 @@ function respondWithError(response, error) {
         const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
         // Return the error to the client
         response.status(myError.code).json(myError);
-        
-        return true; // Indicate that the error was handled
-    } else return false;
+    }
 }
 
 function getUserIDFromRequest(request, callback) {
@@ -83,9 +81,8 @@ router.route("/").post((request, response) => {
             throw ApiErrors.wrongRequestBodyProperties;
 
         getUserIDFromRequest(request, (error, userID) => {
-            if(respondWithError(response, error)) return;
-
-            dbManager.insertStudenthouse(studentenhuis, userID, (error, result) => {
+            if(error) respondWithError(response, error);
+            else dbManager.insertStudenthouse(studentenhuis, userID, (error, result) => {
                 if(error) respondWithError(response, error);
                 else dbManager.getStudenthouseResponseFromNameAndAdress(studentenhuis.naam, studentenhuis.adres, (error, studentenhuis) => {
                     if(error) respondWithError(response, error);
@@ -123,24 +120,18 @@ router.route("/:huisId?").put((request, response) => {
             throw ApiErrors.wrongRequestBodyProperties;
 
         getUserIDFromRequest(request, (error, userID) => {
-            if(respondWithError(response, error)) return;
-
-            dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
-                if(error){
+            if(error) respondWithError(response, error);
+            else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
+                if(error)
                     respondWithError(response, error);
-                    return;
-                }
-
-                if(studentenhuis2.UserID != userID){
+                else if(studentenhuis2.UserID != userID) 
                     respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
-                    return;
-                }
-
-                dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
-                    if(error) respondWithError(response, error);
-                    else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
+                else 
+                    dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
                         if(error) respondWithError(response, error);
-                        else response.status(200).json(studentenhuis);
+                        else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
+                            if(error) respondWithError(response, error);
+                            else response.status(200).json(studentenhuis);
                     });
                 });
             })

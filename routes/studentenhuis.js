@@ -121,19 +121,20 @@ router.route("/:huisId?").put((request, response) => {
         getUserIDFromRequest(request, (error, userID) => {
             if(error) respondWithError(response, error);
             else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
-                if(error)
+                if(error) {
                     respondWithError(response, error);
-                else if(studentenhuis2.UserID != userID) // Check if user is creator of this house
+                } else if (studentenhuis2.UserID != userID) { // Check if user is creator of this house
                     respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
-                else // Update house
+                } else { // Update house
                     dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
                         if(error) respondWithError(response, error);
                         else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
                             if(error) respondWithError(response, error);
                             else response.status(200).json(studentenhuis); // return the house as result
+                        });
                     });
-                });
-            })
+                }
+            });
         });
     } catch (error){
         respondWithError(response, error);
@@ -142,19 +143,24 @@ router.route("/:huisId?").put((request, response) => {
 
 router.route("/:huisId?").delete((request, response) => {
     try {
-        const huisId = request.params.huisId;
+        const huisId = Number(request.params.huisId);
+        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        /**
-         * Verwijder het studentenhuis met de gegeven huisId. 
-         * Als er geen studentenhuis met de gevraagde huisId bestaat wordt een juiste foutmelding geretourneerd. 
-         * Een gebruiker kan alleen een studentenhuis verwijderen als hij dat zelf heeft aangemaakt. 
-         * Deze ID haal je uit het JWT token. 
-         * 
-         * @return {}
-         * @throws ApiErrors.notFound("huisId")
-         * @throws ApiErrors.conflict("Gebruiker mag deze data niet verwijderen")
-         */
-
+        getUserIDFromRequest(request, (error, userID) => {
+            if(error) respondWithError(response, error);
+            else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis) => {
+                if(error) {
+                    respondWithError(response, error);
+                } else if(studentenhuis.UserID != userID) { // Check if user is creator of this house
+                    respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet verwijderen"));
+                } else { // Delete house
+                    dbManager.deleteStudenthouse(huisId, userID, (error, result) => {
+                        if(error) respondWithError(response, error);
+                        else response.status(200).json({});
+                    });
+                }
+            });
+        });
     } catch (error) {
         respondWithError(response, error);
     }

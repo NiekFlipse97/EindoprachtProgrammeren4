@@ -75,14 +75,20 @@ module.exports = class DBManager {
         });
     }
 
+    insertStudenthouse(studentenhuis, userID, callback){
+        this._db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
+            callback(error, null);
+        });
+    }
+
     updateStudenthouse(studentenhuis, huisID, userID, callback){
         this._db.query(`UPDATE studentenhuis SET Naam = ${studentenhuis.naam}, Adres = ${studentenhuis.adres} WHERE ID = ${huisID} AND UserID = ${userID}`, (error, rows, fields) => {
             callback(error, null);
         });
     }
 
-    insertStudenthouse(studentenhuis, userID, callback){
-        this._db.query(`INSERT INTO studentenhuis (Naam, Adres, UserID) VALUES ('${studentenhuis.naam}', '${studentenhuis.adres}', ${userID})`, (error, rows, fields) => {
+    deleteStudenthouse(huisID, userID, callback){
+        this._db.query(`DELETE FROM studentenhuis WHERE ID = ${huisID} AND UserID = ${userID}`, (error, rows, fields) => {
             callback(error, null);
         });
     }

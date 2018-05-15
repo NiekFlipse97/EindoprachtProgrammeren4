@@ -2,23 +2,22 @@ const express = require("express");
 const router = express.Router({});
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
+const ApiErrors = require("../model/ApiErrors.js");
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
 
     // Get the token from the request header.
-    let token = request.header('X-Access-Token');
+    const token = request.header('X-Access-Token');
 
     auth.decodeToken(token, (error, payload) => {
         if (error) {
             // Print the error message to the console.
             console.log('Error handler: ' + error.message);
 
-            // Set the response's status to error.status or 401(Unauthorised).
+            // Set the response's status to error.status or 401 (Unauthorised).
             // Return json to the response with an error message.
-            response.status((error.status || 401)).json({
-                error: new Error("Not authorised").message
-            })
+            response.status((error.status || 401)).json(ApiErrors.notAuthorised)
         } else {
             next();
         }
@@ -27,10 +26,10 @@ router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) 
 
 router.route("/register").post((request, response) => {
     // Get the users information to store in the database.
-    let firstName = request.body.firstname;
-    let lastName = request.body.lastname;
-    let email = request.body.email;
-    let password = request.body.password;
+    const firstName = request.body.firstname;
+    const lastName = request.body.lastname;
+    const email = request.body.email;
+    const password = request.body.password;
 
     // Create the query that will be executed.
     const query = {
@@ -60,8 +59,8 @@ router.route("/register").post((request, response) => {
 
 router.route("/login").post((request, response) => {
     // Get the username and password from the request.
-    let email = request.body.email;
-    let password = request.body.password;
+    const email = request.body.email;
+    const password = request.body.password;
 
     // Check in database for matching username and password.
     db.query("SELECT * FROM user", (error, rows, fields) => {

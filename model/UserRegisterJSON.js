@@ -1,10 +1,11 @@
 const ApiErrors = require("./ApiErrors.js");
+const Isemail = require('isemail');
 module.exports = class UserRegisterJSON {
     constructor(firstname, lastname, email, password){
         if(!(
-            firstname && typeof firstname == "string" && 
-            lastname && typeof lastname == "string" && 
-            email && typeof email == "string" && 
+            firstname && typeof firstname == "string" && firstname.length >= 2 &&
+            lastname && typeof lastname == "string" && lastname.length >= 2 &&
+            email && typeof email == "string" && Isemail.validate(email) &&
             password && typeof password == "string"
         ))
             throw ApiErrors.wrongRequestBodyProperties;
@@ -16,7 +17,7 @@ module.exports = class UserRegisterJSON {
     }
 
     static fromJSON(json){
-        if(!(object && typeof object == "object"))
+        if(!(json && typeof json == "object"))
             throw ApiErrors.wrongRequestBodyProperties;
 
         return new UserRegisterJSON(json.firstname, json.lastname, json.email, json.password);

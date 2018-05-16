@@ -6,13 +6,12 @@ const UserLoginJSON = require("../model/UserLoginJSON");
 const UserRegisterJSON = require("../model/UserRegisterJSON");
 const ValidToken = require("../model/ValidToken");
 // Errors
+const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
 // Database
 const db = require('../db/mysql-connector');
 // Authentication
 const auth = require('../auth/authentication');
-// Email validation checker
-const Isemail = require('isemail');
 
 function respondWithError(response, error) {
     if (error) {
@@ -87,7 +86,7 @@ router.route("/login").post((request, response) => {
 
         // Check in database for matching username and password.
         login(loginObject.email, loginObject.password, (error, result) => {
-            if(error) respondWithError(error);
+            if(error) respondWithError(response, error);
             else response.status(200).json(result);
         });
     } catch (error) {

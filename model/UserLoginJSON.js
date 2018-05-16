@@ -12,7 +12,7 @@ module.exports = class UserLoginJSON {
     }
 
     static fromJSON(json){
-        if(!(object && typeof object == "object"))
+        if(!(json && typeof json == "object"))
             throw ApiErrors.wrongRequestBodyProperties;
 
         return new UserLoginJSON(json.email, json.password);

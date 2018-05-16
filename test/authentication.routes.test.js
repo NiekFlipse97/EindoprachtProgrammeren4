@@ -10,10 +10,6 @@ const server = require('../main');
 chai.should();
 chai.use(chaiHttp);
 
-// After successful registration we have a valid token. We export this token
-// for usage in other testcases that require login.
-let validToken;
-
 const datetime = moment().unix().toString();
 
 describe('Registration', () => {
@@ -31,10 +27,6 @@ describe('Registration', () => {
                 res.body.should.be.a('object');
                 res.body.should.have.property('token');
                 res.body.should.have.property('email');
-                validToken = res.body.token;
-                module.exports = {
-                    token: validToken
-                };
                 done()
             });
     });
@@ -228,6 +220,6 @@ describe('Login', () => {
                 res.body.should.have.property('datetime');
                 done()
             });
-    })
+    });
 
 });

@@ -1,12 +1,28 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const moment = require('moment');
 const server = require('../main');
-const token = require("./authentication.routes.test.js").token;
 
 chai.should();
 chai.use(chaiHttp);
 
+let token;
+
+const datetime = moment().unix().toString();
+
 describe('Studentenhuis API POST', () => {
+    if(!token) before(() => {
+        chai.request(server)
+            .post('/api/login')
+            .send({
+                email: "test@test.com",
+                password: `T3st-${datetime}`
+            })
+            .end((err, res) => {
+                token = res.body.token;
+            });
+    });
+
     it('should throw an error when using invalid JWT token', (done) => {
         chai.request(server)
             .post('/api/studentenhuis')
@@ -18,15 +34,28 @@ describe('Studentenhuis API POST', () => {
                 res.body.should.have.property('message');
                 res.body.should.have.property('code');
                 res.body.should.have.property('datetime');
-                done()
+                done();
             });
     });
 
     it('should return a studentenhuis when posting a valid object', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/studentenhuis')
+            .set("X-Access-Token", token)
+            .send({
+                naam: "Testinghouse 1234",
+                adres: "Testinglane, testingcity"
+            })
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('ID');
+                res.body.should.have.property('naam');
+                res.body.should.have.property('adres');
+                res.body.should.have.property('contact');
+                res.body.should.have.property('email');
+                done()
+            });
     });
 
     it('should throw an error when naam is missing', (done) => {

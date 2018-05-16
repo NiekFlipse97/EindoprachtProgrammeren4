@@ -15,6 +15,6 @@ module.exports = class Studentenhuis {
         if(!(json && typeof json == "object"))
             throw ApiErrors.wrongRequestBodyProperties;
 
-        return new Studentenhuis(json.Naam, json.Adres);
+        return new Studentenhuis(json.naam, json.adres);
     }
 }

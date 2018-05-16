@@ -12,6 +12,7 @@ const dbManager = new DBManager(db);
 const auth = require('../auth/authentication');
 // Models
 const Studentenhuis = require("../model/Studentenhuis.js");
+const Maaltijd = require("../model/Maaltijd.js");
 
 function respondWithError(response, error) {
     if (error) {
@@ -39,32 +40,6 @@ function getUserIDFromRequest(request, callback) {
         // Search for the user in the database by email
         dbManager.getUserIDFromEmail(userEmail, callback);
     });
-}
-
-class CheckObjects {
-    // Returns true if the given object is a valid meal
-    static isMaaltijd(object) {
-        const tmp =
-            object && typeof object == "object" &&
-            object.naam && typeof object.naam == "string" &&
-            object.beschrijving && typeof object.beschrijving == "string" &&
-            object.ingredienten && typeof object.ingredienten == "string" &&
-            object.allergie && typeof object.allergie == "string" &&
-            object.prijs && typeof object.prijs == "number";
-
-        return tmp;
-    }
-
-    // Returns true if the given ovject is a valid deelnemer
-    static isDeelnemer(object) {
-        const tmp =
-            object && typeof object === "object" &&
-            object.voornaam && typeof object.voornaam === "string" &&
-            object.achternaam && typeof object.achternaam === "string" &&
-            object.email && typeof object.email === "string";
-
-        return tmp;
-    }
 }
 
 // Studentenhuis
@@ -212,12 +187,8 @@ router.route("/:huisId/maaltijd").get((request, response) => {
 router.route("/:huisId?/maaltijd").post((request, response) => {
     try {
         const huisId = request.params.huisId;
-        const maaltijd = request.body;
+        const maaltijd = Maaltijd.fromJSON(request.body);
         const token = request.header('X-Access-Token');
-
-        if (!CheckObjects.isMaaltijd(maaltijd)) {
-            throw ApiErrors.wrongRequestBodyProperties;
-        }
 
         /**
          * Maak een nieuwe maaltijd voor een studentenhuis.
@@ -297,10 +268,7 @@ router.route("/:huisId/maaltijd/:maaltijdId").put((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
-        const maaltijd = request.body;
-
-        if (!CheckObjects.isMaaltijd(maaltijd))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const maaltijd = Maaltijd.fromJSON(request.body);
 
         checkHouseId(huisId, response);
 

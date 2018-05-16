@@ -1,4 +1,3 @@
-const ApiErrors = require("./ApiErrors.js");
 module.exports = class StudentenhuisResponse {
     constructor (ID, naam, adres, contact, email){
         if(!(
@@ -8,7 +7,7 @@ module.exports = class StudentenhuisResponse {
             contact && typeof contact == "string" && 
             email && typeof email == "string"
         ))
-            throw ApiErrors.wrongRequestBodyProperties;
+        console.log("One or more parameters are of the wrong type (StudentenhuisResponse)!");
 
         this.ID = ID;
         this.naam = naam;

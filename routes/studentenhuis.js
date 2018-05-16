@@ -10,7 +10,7 @@ const DBManager = require('../db/dbmanager.js');
 const dbManager = new DBManager(db);
 
 function respondWithError(response, error) {
-    if(error){
+    if (error) {
         // If the error is not an ApiError, convert it to an ApiError.
         const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
         // Return the error to the client
@@ -25,11 +25,11 @@ function getUserIDFromRequest(request, callback) {
     const token = request.header('X-Access-Token');
     // Decode the token
     auth.decodeToken(token, (error, payload) => {
-        if(error){ 
+        if (error) {
             callback(ApiErrors.notAuthorised, null);
             return;
         }
-        
+
         // Get the email from the payload/decoded token
         const userEmail = payload.sub;
         // Search for the user in the database by email
@@ -54,8 +54,19 @@ class CheckObjects {
             object.naam && typeof object.naam == "string" &&
             object.beschrijving && typeof object.beschrijving == "string" &&
             object.ingredienten && typeof object.ingredienten == "string" &&
-                object.allergie && typeof object.allergie == "string" &&
+            object.allergie && typeof object.allergie == "string" &&
             object.prijs && typeof object.prijs == "number";
+
+        return tmp;
+    }
+
+    // Returns true if the given ovject is a valid deelnemer
+    static isDeelnemer(object) {
+        const tmp =
+            object && typeof object === "object" &&
+            object.voornaam && typeof object.voornaam === "string" &&
+            object.achternaam && typeof object.achternaam === "string" &&
+            object.email && typeof object.email === "string";
 
         return tmp;
     }
@@ -66,10 +77,10 @@ class CheckObjects {
 router.route("/").get((request, response) => {
     try {
         dbManager.getStudenthouseResponses((error, studentenHuizen) => {
-            if(error) respondWithError(response, error);
+            if (error) respondWithError(response, error);
             else response.status(200).json(studentenHuizen); // Return a list of all student houses with code 200 (OK)
         });
-    } catch (error){
+    } catch (error) {
         respondWithError(response, error); // Return the error to the client
     }
 });
@@ -82,30 +93,30 @@ router.route("/").post((request, response) => {
             throw ApiErrors.wrongRequestBodyProperties;
 
         getUserIDFromRequest(request, (error, userID) => {
-            if(error) respondWithError(response, error);
+            if (error) respondWithError(response, error);
             else dbManager.insertStudenthouse(studentenhuis, userID, (error, result) => {
-                if(error) respondWithError(response, error);
+                if (error) respondWithError(response, error);
                 else dbManager.getStudenthouseResponseFromNameAndAdress(studentenhuis.naam, studentenhuis.adres, (error, studentenhuis) => {
-                    if(error) respondWithError(response, error);
+                    if (error) respondWithError(response, error);
                     else response.status(200).json(studentenhuis);
                 })
             })
         });
-    } catch (error){
+    } catch (error) {
         respondWithError(response, error);
     }
 });
 
 router.route("/:huisId?").get((request, response) => {
-    try { 
+    try {
         const huisId = Number(request.params.huisId);
-        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
+        if (isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
         dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
-            if(error) respondWithError(response, error);
+            if (error) respondWithError(response, error);
             else response.status(200).json(studentenhuis);
         });
-    } catch (error){
+    } catch (error) {
         respondWithError(response, error);
     }
 });
@@ -113,31 +124,31 @@ router.route("/:huisId?").get((request, response) => {
 router.route("/:huisId?").put((request, response) => {
     try {
         const huisId = Number(request.params.huisId);
-        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
+        if (isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
         const studentenhuis = request.body;
-        if(!CheckObjects.isStudentenHuis(studentenhuis))
+        if (!CheckObjects.isStudentenHuis(studentenhuis))
             throw ApiErrors.wrongRequestBodyProperties;
 
         getUserIDFromRequest(request, (error, userID) => {
-            if(error) respondWithError(response, error);
+            if (error) respondWithError(response, error);
             else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis2) => {
-                if(error) {
+                if (error) {
                     respondWithError(response, error);
                 } else if (studentenhuis2.UserID != userID) { // Check if user is creator of this house
                     respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet wijzigen"));
                 } else { // Update house
                     dbManager.updateStudenthouse(studentenhuis, huisId, userID, (error, result) => {
-                        if(error) respondWithError(response, error);
+                        if (error) respondWithError(response, error);
                         else dbManager.getStudenthouseResponseFromID(huisId, (error, studentenhuis) => {
-                            if(error) respondWithError(response, error);
+                            if (error) respondWithError(response, error);
                             else response.status(200).json(studentenhuis); // return the house as result
                         });
                     });
                 }
             });
         });
-    } catch (error){
+    } catch (error) {
         respondWithError(response, error);
     }
 });
@@ -145,18 +156,18 @@ router.route("/:huisId?").put((request, response) => {
 router.route("/:huisId?").delete((request, response) => {
     try {
         const huisId = Number(request.params.huisId);
-        if(isNaN(huisId)) throw ApiErrors.notFound("huisId");
+        if (isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
         getUserIDFromRequest(request, (error, userID) => {
-            if(error) respondWithError(response, error);
+            if (error) respondWithError(response, error);
             else dbManager.getStudenthouseFromID(huisId, (error, studentenhuis) => {
-                if(error) {
+                if (error) {
                     respondWithError(response, error);
-                } else if(studentenhuis.UserID != userID) { // Check if user is creator of this house
+                } else if (studentenhuis.UserID != userID) { // Check if user is creator of this house
                     respondWithError(response, ApiErrors.conflict("Gebruiker mag deze data niet verwijderen"));
                 } else { // Delete house
                     dbManager.deleteStudenthouse(huisId, userID, (error, result) => {
-                        if(error) respondWithError(response, error);
+                        if (error) respondWithError(response, error);
                         else response.status(200).json({});
                     });
                 }
@@ -214,7 +225,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
         const maaltijd = request.body;
         const token = request.header('X-Access-Token');
 
-        if (!CheckObjects.isMaaltijd(maaltijd)){
+        if (!CheckObjects.isMaaltijd(maaltijd)) {
             const error = ApiErrors.wrongRequestBodyProperties;
             response.status(error.code).json(error);
             return;
@@ -243,7 +254,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
                         response.status(err.status).json(JSON.stringify(err.message));
                         return;
                     }
-                    db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result, ){
+                    db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result,) {
                         if (err) {
                             response.status(err.status).json(JSON.stringify(err.message));
                             return;
@@ -383,19 +394,17 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
 
 // Deelnemers
 
-router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").get((request, response) => {
+router.route("/:huisId/maaltijd/:maaltijdId/deelnemers").get((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * @return de lijst met deelnemers voor de maaltijd met gegeven maaltijdID in het studentenhuis met huisId.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * Deelnemers zijn geregistreerde gebruikers die zich hebben aangemeld voor deze maaltijd.
-         * Iedere gebruiker kan alle deelnemers van alle maaltijden in alle studentenhuizen opvragen.
-         *
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         */
+        checkHouseId(huisId, response);
+
+        dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+            if (error) respondWithError(response, error);
+            response.json(users);
+        })
 
     } catch (error) {
         respondWithError(response, error);
@@ -407,16 +416,27 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").post((request, respon
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * Meld je aan voor een maaltijd in een studentenhuis.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * De user ID uit het token is dat van de gebruiker die zich aanmeldt.
-         * Die gebruiker wordt dus aan de lijst met aanmelders toegevoegd.
-         * Een gebruiker kan zich alleen aanmelden als hij niet al aan de maaltijd deelneemt; anders volgt een foutmelding
-         *
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         * @throws ApiErrors.conflict("Gebruiker is al aangemeld")
-         */
+        checkHouseId(huisId, response);
+
+        getUserIDFromRequest(request, (error, userId) => {
+            if (error) {
+                respondWithError(response, error);
+            } else {
+                dbManager.insertDeelnemer(userId, maaltijdId, huisId, (error, result) => {
+                    if (error) {
+                        respondWithError(response, error);
+                    } else {
+                        dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+                            if (error) {
+                                respondWithError(response, error);
+                            }
+
+                            response.json(users);
+                        })
+                    }
+                });
+            }
+        })
 
     } catch (error) {
         respondWithError(response, error);
@@ -428,15 +448,21 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, resp
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * Verwijder een deelnemer.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * De deelnemer die wordt verwijderd is de gebruiker met het ID uit het token.
-         * Een gebruiker kan alleen zijn eigen aanmelding verwijderen.
-         *
-         * @return {}
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         */
+        checkHouseId(huisId, response);
+
+        getUserIDFromRequest(request, (error, userId) => {
+            if (error) respondWithError(response, error);
+
+            dbManager.deleteUserFromDeelnemers(userId, maaltijdId, (error, rows, fields) => {
+                if (error) respondWithError(response, error);
+
+                dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+                    if (error) respondWithError(response, error);
+
+                    response.json(users);
+                })
+            })
+        })
 
     } catch (error) {
         respondWithError(response, error);

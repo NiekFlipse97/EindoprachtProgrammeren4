@@ -1,6 +1,7 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const server = require('../main');
+const token = require("./authentication.routes.test.js").token;
 
 chai.should();
 chai.use(chaiHttp);

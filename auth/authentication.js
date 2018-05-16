@@ -6,12 +6,12 @@ const jwt = require('jwt-simple');
 // Encode (van username naar token)
 //
 function encodeToken(username) {
-    const playload = {
+    const payload = {
         exp: moment().add(10, 'days').unix(),
         iat: moment().unix(),
         sub: username
     };
-    return jwt.encode(playload, config.secretkey, null, null);
+    return jwt.encode(payload, config.secretkey, null, null);
 }
 
 //

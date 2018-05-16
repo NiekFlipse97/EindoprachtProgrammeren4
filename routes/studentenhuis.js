@@ -59,6 +59,17 @@ class CheckObjects {
 
         return tmp;
     }
+
+    // Returns true if the given ovject is a valid deelnemer
+    static isDeelnemer(object) {
+        const tmp =
+            object && typeof object === "object" &&
+            object.voornaam && typeof object.voornaam === "string" &&
+            object.achternaam && typeof object.achternaam === "string" &&
+            object.email && typeof object.email === "string";
+
+        return tmp;
+    }
 }
 
 // Studentenhuis
@@ -383,7 +394,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
 
 // Deelnemers
 
-router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").get((request, response) => {
+router.route("/:huisId/maaltijd/:maaltijdId/deelnemers").get((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
@@ -396,6 +407,12 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").get((request, respons
          *
          * @throws ApiErrors.notFound("huisId of maaltijdId")
          */
+
+        checkHouseId(huisId, response);
+
+        dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+            response.json(users);
+        })
 
     } catch (error) {
         respondWithError(response, error);
@@ -417,6 +434,8 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").post((request, respon
          * @throws ApiErrors.notFound("huisId of maaltijdId")
          * @throws ApiErrors.conflict("Gebruiker is al aangemeld")
          */
+
+
 
     } catch (error) {
         respondWithError(response, error);

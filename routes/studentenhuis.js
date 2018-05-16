@@ -402,6 +402,7 @@ router.route("/:huisId/maaltijd/:maaltijdId/deelnemers").get((request, response)
         checkHouseId(huisId, response);
 
         dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+            if (error) respondWithError(response, error);
             response.json(users);
         })
 
@@ -418,11 +419,23 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").post((request, respon
         checkHouseId(huisId, response);
 
         getUserIDFromRequest(request, (error, userId) => {
-            dbManager.insertDeelnemer(userId, maaltijdId, huisId, (error, result) => {
-                dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
-                    response.json(users);
-                })
-            });
+            if (error) {
+                respondWithError(response, error);
+            } else {
+                dbManager.insertDeelnemer(userId, maaltijdId, huisId, (error, result) => {
+                    if (error) {
+                        respondWithError(response, error);
+                    } else {
+                        dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+                            if (error) {
+                                respondWithError(response, error);
+                            }
+
+                            response.json(users);
+                        })
+                    }
+                });
+            }
         })
 
     } catch (error) {
@@ -435,21 +448,17 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, resp
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * Verwijder een deelnemer.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * De deelnemer die wordt verwijderd is de gebruiker met het ID uit het token.
-         * Een gebruiker kan alleen zijn eigen aanmelding verwijderen.
-         *
-         * @return {}
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         */
-
         checkHouseId(huisId, response);
 
         getUserIDFromRequest(request, (error, userId) => {
+            if (error) respondWithError(response, error);
+
             dbManager.deleteUserFromDeelnemers(userId, maaltijdId, (error, rows, fields) => {
+                if (error) respondWithError(response, error);
+
                 dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+                    if (error) respondWithError(response, error);
+
                     response.json(users);
                 })
             })

@@ -24,9 +24,6 @@ describe('Registration', () => {
                 password: "T3st"
             })
             .end((err, res) => {
-                console.log(err);
-                console.log(res);
-                expect(err).to.be.null;
                 res.should.have.status(200);
                 res.body.should.be.a('object');
                 res.body.should.have.property('token');

@@ -27,6 +27,7 @@ router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) 
 function login(email, password, callback){
     // Check in database for matching username and password.
     db.query(`SELECT * FROM user WHERE Email = "${email}" AND Password = "${password}"`, (error, rows, fields) => {
+        if(error) console.log(`Error on login query: ${error.message}, ${error.sqlMessage}`);
         if(error) callback(error, null);
         else if(rows.length == 0) callback(ApiErrors.wrongRequestBodyProperties, null);
         else callback(null, {
@@ -43,6 +44,7 @@ class CheckObjects {
             object && typeof object == "object" && 
             object.email && typeof object.email == "string" && 
             object.password && typeof object.password == "string";
+        console.log(`Is login valid: ${tmp}`);
         return tmp;
     }
 
@@ -50,11 +52,11 @@ class CheckObjects {
     static isValidRegistration(object){
         const tmp = 
             object && typeof object == "object" && 
-            object.firstName && typeof object.firstName == "string" && 
-            object.lastName && typeof object.lastName == "string" &&
+            object.firstname && typeof object.firstname == "string" && 
+            object.lastname && typeof object.lastname == "string" &&
             object.email && typeof object.email == "string" &&
             object.password && typeof object.password == "string";
-        
+        console.log(`Is registration valid: ${tmp}`);
         return tmp;
     }
 }

@@ -1,13 +1,18 @@
+// Express
 const express = require("express");
 const router = express.Router();
-
+// Errors
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
+// Database
 const db = require('../db/mysql-connector');
-const auth = require('../auth/authentication');
-
 const DBManager = require('../db/dbmanager.js');
 const dbManager = new DBManager(db);
+// Authentication
+const auth = require('../auth/authentication');
+// Models
+const Studentenhuis = require("../model/Studentenhuis.js");
+const Maaltijd = require("../model/Maaltijd.js");
 
 function respondWithError(response, error) {
     if (error) {
@@ -37,41 +42,6 @@ function getUserIDFromRequest(request, callback) {
     });
 }
 
-class CheckObjects {
-    // Returns true if the given object is a valid student house
-    static isStudentenHuis(object) {
-        const tmp =
-            object && typeof object == "object" &&
-            object.naam && typeof object.naam == "string" &&
-            object.adres && typeof object.adres == "string";
-        return tmp;
-    }
-
-    // Returns true if the given object is a valid meal
-    static isMaaltijd(object) {
-        const tmp =
-            object && typeof object == "object" &&
-            object.naam && typeof object.naam == "string" &&
-            object.beschrijving && typeof object.beschrijving == "string" &&
-            object.ingredienten && typeof object.ingredienten == "string" &&
-            object.allergie && typeof object.allergie == "string" &&
-            object.prijs && typeof object.prijs == "number";
-
-        return tmp;
-    }
-
-    // Returns true if the given ovject is a valid deelnemer
-    static isDeelnemer(object) {
-        const tmp =
-            object && typeof object === "object" &&
-            object.voornaam && typeof object.voornaam === "string" &&
-            object.achternaam && typeof object.achternaam === "string" &&
-            object.email && typeof object.email === "string";
-
-        return tmp;
-    }
-}
-
 // Studentenhuis
 
 router.route("/").get((request, response) => {
@@ -87,10 +57,7 @@ router.route("/").get((request, response) => {
 
 router.route("/").post((request, response) => {
     try {
-        const studentenhuis = request.body;
-
-        if (!CheckObjects.isStudentenHuis(studentenhuis))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const studentenhuis = Studentenhuis.fromJSON(request.body);
 
         getUserIDFromRequest(request, (error, userID) => {
             if (error) respondWithError(response, error);
@@ -126,9 +93,7 @@ router.route("/:huisId?").put((request, response) => {
         const huisId = Number(request.params.huisId);
         if (isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        const studentenhuis = request.body;
-        if (!CheckObjects.isStudentenHuis(studentenhuis))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const studentenhuis = Studentenhuis.fromJSON(request.body);
 
         getUserIDFromRequest(request, (error, userID) => {
             if (error) respondWithError(response, error);
@@ -222,12 +187,8 @@ router.route("/:huisId/maaltijd").get((request, response) => {
 router.route("/:huisId?/maaltijd").post((request, response) => {
     try {
         const huisId = request.params.huisId;
-        const maaltijd = request.body;
+        const maaltijd = Maaltijd.fromJSON(request.body);
         const token = request.header('X-Access-Token');
-
-        if (!CheckObjects.isMaaltijd(maaltijd)) {
-            throw ApiErrors.wrongRequestBodyProperties;
-        }
 
         /**
          * Maak een nieuwe maaltijd voor een studentenhuis.
@@ -307,10 +268,7 @@ router.route("/:huisId/maaltijd/:maaltijdId").put((request, response) => {
     try {
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
-        const maaltijd = request.body;
-
-        if (!CheckObjects.isMaaltijd(maaltijd))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const maaltijd = Maaltijd.fromJSON(request.body);
 
         checkHouseId(huisId, response);
 

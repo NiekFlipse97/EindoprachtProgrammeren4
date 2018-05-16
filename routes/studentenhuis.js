@@ -1,13 +1,17 @@
+// Express
 const express = require("express");
 const router = express.Router();
-
+// Errors
 const ApiError = require("../model/ApiError.js");
 const ApiErrors = require("../model/ApiErrors.js");
+// Database
 const db = require('../db/mysql-connector');
-const auth = require('../auth/authentication');
-
 const DBManager = require('../db/dbmanager.js');
 const dbManager = new DBManager(db);
+// Authentication
+const auth = require('../auth/authentication');
+// Models
+const Studentenhuis = require("../model/Studentenhuis.js");
 
 function respondWithError(response, error) {
     if (error) {
@@ -38,15 +42,6 @@ function getUserIDFromRequest(request, callback) {
 }
 
 class CheckObjects {
-    // Returns true if the given object is a valid student house
-    static isStudentenHuis(object) {
-        const tmp =
-            object && typeof object == "object" &&
-            object.naam && typeof object.naam == "string" &&
-            object.adres && typeof object.adres == "string";
-        return tmp;
-    }
-
     // Returns true if the given object is a valid meal
     static isMaaltijd(object) {
         const tmp =
@@ -87,10 +82,7 @@ router.route("/").get((request, response) => {
 
 router.route("/").post((request, response) => {
     try {
-        const studentenhuis = request.body;
-
-        if (!CheckObjects.isStudentenHuis(studentenhuis))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const studentenhuis = Studentenhuis.fromJSON(request.body);
 
         getUserIDFromRequest(request, (error, userID) => {
             if (error) respondWithError(response, error);
@@ -126,9 +118,7 @@ router.route("/:huisId?").put((request, response) => {
         const huisId = Number(request.params.huisId);
         if (isNaN(huisId)) throw ApiErrors.notFound("huisId");
 
-        const studentenhuis = request.body;
-        if (!CheckObjects.isStudentenHuis(studentenhuis))
-            throw ApiErrors.wrongRequestBodyProperties;
+        const studentenhuis = Studentenhuis.fromJSON(request.body);
 
         getUserIDFromRequest(request, (error, userID) => {
             if (error) respondWithError(response, error);
@@ -194,7 +184,7 @@ router.route("/:huisId/maaltijd").get((request, response) => {
 
         db.query("SELECT * FROM maaltijd WHERE StudentenhuisID = ? ", [huisId], (error, rows, fields) => {
             if (error) {
-                response.status(error.code).json(JSON.stringify(error.message));
+                respondWithError(response, error);
                 return;
             }
 
@@ -226,9 +216,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
         const token = request.header('X-Access-Token');
 
         if (!CheckObjects.isMaaltijd(maaltijd)) {
-            const error = ApiErrors.wrongRequestBodyProperties;
-            response.status(error.code).json(error);
-            return;
+            throw ApiErrors.wrongRequestBodyProperties;
         }
 
         /**
@@ -251,12 +239,12 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
 
                 db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
                     if (err) {
-                        response.status(err.status).json(JSON.stringify(err.message));
+                        respondWithError(response, err);
                         return;
                     }
                     db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result,) {
                         if (err) {
-                            response.status(err.status).json(JSON.stringify(err.message));
+                            respondWithError(response, err);
                             return;
                         }
                         response.json(result)
@@ -366,7 +354,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
 
                 db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, r, f) => {
                     if (error) {
-                        response.status(error.code).json(JSON.stringify(error.message));
+                        respondWithError(response, error);
                     }
                     if (r.length < 1) {
                         const error = ApiErrors.notFound("maaltijdId");

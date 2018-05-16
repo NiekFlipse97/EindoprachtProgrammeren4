@@ -1,8 +1,14 @@
+// Express
 const express = require("express");
 const router = express.Router();
+
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
+const UserLoginJSON = require("../model/UserLoginJSON");
+const UserRegisterJSON = require("../model/UserRegisterJSON");
+
 const ApiErrors = require("../model/ApiErrors.js");
+
 const Isemail = require('isemail');
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
@@ -38,91 +44,63 @@ function login(email, password, callback){
     });
 }
 
-class CheckObjects {
-    // Returns true if the given object is a valid login
-    static isValidLogin(object){
-        const tmp = 
-            object && typeof object == "object" && 
-            object.email && typeof object.email == "string" && 
-            object.password && typeof object.password == "string";
-        console.log(`Is login valid: ${tmp == undefined ? false : tmp}`);
-        return tmp == undefined ? false : tmp;
-    }
-
-    // Returns true if the given object is a valid register
-    static isValidRegistration(object){
-        const tmp = 
-            object && typeof object == "object" && 
-            object.firstname && typeof object.firstname == "string" && object.firstname.length >= 2 && 
-            object.lastname && typeof object.lastname == "string" && object.lastname.length >= 2 &&
-            object.email && typeof object.email == "string" && Isemail.validate(object.email) &&
-            object.password && typeof object.password == "string";
-        console.log(`Is registration valid: ${tmp == undefined ? false : tmp}`);
-        return tmp == undefined ? false : tmp;
+function respondWithError(response, error) {
+    if (error) {
+        // If the error is not an ApiError, convert it to an ApiError.
+        const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
+        // Return the error to the client
+        response.status(myError.code).json(myError);
+        // Log the error
+        console.log(`Oops! An error appeared: ${JSON.stringify(myError)}`)
     }
 }
 
 router.route("/register").post((request, response) => {
-    const registration = request.body;
-    if(!CheckObjects.isValidRegistration(registration)){
-        const error = ApiErrors.wrongRequestBodyProperties;
-        response.status(error.code).json(error);
-        return;
+    try {
+        const registration = UserRegisterJSON.fromJSON(request.body);
+        db.query(`SELECT * FROM user WHERE Voornaam = "${registration.firstname}" AND Achternaam = "${registration.lastname}" AND Email = "${registration.email}" AND Password = "${registration.password}"`, (error, rows, fields) => {
+            if(error) respondWithError(response, error);
+            else if(rows.length > 0) respondWithError(response, ApiErrors.notAuthorised); // User already exists.
+            else {
+                // Create the query that will be executed.
+                const query = {
+                    sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
+                    values: [registration.firstname, registration.lastname, registration.email, registration.password],
+                    timeout: 2000
+                };
+    
+                // Execute the insert query
+                db.query(query, (error, rows, fields) => {
+                    // If there is no error
+                    if (!error) {
+                        login(registration.email, registration.password, (error, result) => {
+                            if(error) respondWithError(response, error);
+                            else response.status(200).json(result);
+                        });
+                    } else { 
+                        // If there is an error.
+                        respondWithError(response, error);
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        respondWithError(response, error);
     }
-    // Get the users information to store in the database.
-    const firstName = registration.firstname;
-    const lastName = registration.lastname;
-    const email = registration.email;
-    const password = registration.password;
-
-    db.query(`SELECT * FROM user WHERE Voornaam = "${firstName}" AND Achternaam = "${lastName}" AND Email = "${email}" AND Password = "${password}"`, (error, rows, fields) => {
-        if(rows.length > 0){
-            // User already exists.
-            const error = ApiErrors.notAuthorised
-            response.status(error.code).json(error);
-        } else {
-            // Create the query that will be executed.
-            const query = {
-                sql: 'INSERT INTO user (Voornaam, Achternaam, Email, Password) VALUES(?, ?, ?, ?)',
-                values: [firstName, lastName, email, password],
-                timeout: 2000
-            };
-
-            // Execute the insert query
-            db.query(query, (error, rows, fields) => {
-                // If there is no error
-                if (!error) {
-                    login(email, password, (error, result) => {
-                        if(error) response.status(error.code || 500).json(error);
-                        else response.status(200).json(result);
-                    });
-                } else { 
-                    // If there is an error.
-                    // Set the status to 500 (error.code), and return the error message.
-                    const error = ApiErrors.other(error.message);
-                    response.status(error.code).json(error);
-                }
-            });
-        }
-    });
 });
 
 router.route("/login").post((request, response) => {
-    const loginObject = request.body;
-    if(!CheckObjects.isValidLogin(loginObject)){
-        const error = ApiErrors.wrongRequestBodyProperties;
-        response.status(error.code).json(error);
-        return;
-    }
-    // Get the username and password from the request.
-    const email = loginObject.email;
-    const password = loginObject.password;
+    try {
+        const loginObject = UserLoginJSON.fromJSON(request.body);
 
-    // Check in database for matching username and password.
-    login(email, password, (error, result) => {
-        if(error) response.status(error.code || 500).json(error);
-        else response.status(200).json(result);
-    });
+        // Check in database for matching username and password.
+        login(loginObject.email, loginObject.password, (error, result) => {
+            if(error) respondWithError(error);
+            else response.status(200).json(result);
+        });
+    } catch (error) {
+        respondWithError(response, error);
+    }
 });
 
 module.exports = router;

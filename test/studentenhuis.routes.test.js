@@ -6,9 +6,14 @@ const server = require('../main');
 chai.should();
 chai.use(chaiHttp);
 
-let token;
-
 const datetime = moment().unix().toString();
+
+let token;
+let testHouseId;
+const testHouse = {
+    naam: "Testinghouse 1234",
+    adres: "Testinglane, testingcity"
+};
 
 describe('Studentenhuis API POST', () => {
     if(!token) before(() => {
@@ -42,10 +47,7 @@ describe('Studentenhuis API POST', () => {
         chai.request(server)
             .post('/api/studentenhuis')
             .set("X-Access-Token", token)
-            .send({
-                naam: "Testinghouse 1234",
-                adres: "Testinglane, testingcity"
-            })
+            .send(testHouse)
             .end((err, res) => {
                 res.should.have.status(200);
                 res.body.should.be.a('object');
@@ -54,22 +56,43 @@ describe('Studentenhuis API POST', () => {
                 res.body.should.have.property('adres');
                 res.body.should.have.property('contact');
                 res.body.should.have.property('email');
-                done()
+                testHouseId = res.body.ID;
+                done();
             });
     });
 
     it('should throw an error when naam is missing', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/studentenhuis')
+            .set("X-Access-Token", token)
+            .send({
+                adres: "Testinglane, testingcity"
+            })
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done();
+            });
     });
 
     it('should throw an error when adres is missing', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/studentenhuis')
+            .set("X-Access-Token", token)
+            .send({
+                naam: "Testinghouse 1234"
+            })
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done();
+            });
     })
 });
 
@@ -84,22 +107,26 @@ describe('Studentenhuis API GET all', () => {
                 res.body.should.have.property('message');
                 res.body.should.have.property('code');
                 res.body.should.have.property('datetime');
-                done()
+                done();
             });
     });
 
     it('should return all studentenhuizen when using a valid token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get('/api/studentenhuis')
+            .set("X-Access-Token", token)
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('array');
+                done();
+            });
     })
 });
 
 describe('Studentenhuis API GET one', () => {
     it('should throw an error when using invalid JWT token', (done) => {
         chai.request(server)
-            .get('/api/studentenhuis/1/')
+            .get(`/api/studentenhuis/${testHouseId}/`)
             .set("X-Access-Token", "ABCD")
             .end((err, res) => {
                 res.should.not.have.status(200);
@@ -107,29 +134,47 @@ describe('Studentenhuis API GET one', () => {
                 res.body.should.have.property('message');
                 res.body.should.have.property('code');
                 res.body.should.have.property('datetime');
-                done()
+                done();
             });
     });
 
     it('should return the correct studentenhuis when using an existing huisId', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get(`/api/studentenhuis/${testHouseId}/`)
+            .set("X-Access-Token", token)
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('ID');
+                res.body.should.have.property('naam');
+                res.body.should.have.property('adres');
+                res.body.should.have.property('contact');
+                res.body.should.have.property('email');
+                res.body.naam.should.equal(testHouse.naam);
+                res.body.adres.should.equal(testHouse.adres);
+                done();
+            });
     });
 
     it('should return an error when using an non-existing huisId', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get(`/api/studentenhuis/${testHouseId}/`)
+            .set("X-Access-Token", token)
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done();
+            });
     })
 });
 
 describe('Studentenhuis API PUT', () => {
     it('should throw an error when using invalid JWT token', (done) => {
         chai.request(server)
-            .put('/api/studentenhuis/1/')
+            .put(`/api/studentenhuis/${testHouseId}/`)
             .set("X-Access-Token", "ABCD")
             .send({})
             .end((err, res) => {
@@ -138,7 +183,7 @@ describe('Studentenhuis API PUT', () => {
                 res.body.should.have.property('message');
                 res.body.should.have.property('code');
                 res.body.should.have.property('datetime');
-                done()
+                done();
             });
     });
 
@@ -146,37 +191,36 @@ describe('Studentenhuis API PUT', () => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     });
 
     it('should throw an error when naam is missing', (done) => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     });
 
     it('should throw an error when adres is missing', (done) => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     })
 });
 
 describe('Studentenhuis API DELETE', () => {
     it('should throw an error when using invalid JWT token', (done) => {
         chai.request(server)
-            .post('/api/studentenhuis/1/')
+            .delete(`/api/studentenhuis/${testHouseId}/`)
             .set("X-Access-Token", "ABCD")
-            .send({})
             .end((err, res) => {
                 res.should.not.have.status(200);
                 res.body.should.be.a('object');
                 res.body.should.have.property('message');
                 res.body.should.have.property('code');
                 res.body.should.have.property('datetime');
-                done()
+                done();
             });
     });
 
@@ -184,20 +228,20 @@ describe('Studentenhuis API DELETE', () => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     });
 
     it('should throw an error when naam is missing', (done) => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     });
 
     it('should throw an error when adres is missing', (done) => {
         //
         // Hier schrijf je jouw testcase.
         //
-        done()
+        done();
     })
 });

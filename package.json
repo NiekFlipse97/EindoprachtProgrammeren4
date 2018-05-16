@@ -20,6 +20,7 @@
   "homepage": "https://github.com/NiekFlipse97/EindoprachtProgrammeren4#readme",
   "dependencies": {
     "assert": "^1.4.1",
+    "bcrypt": "^2.0.1",
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
     "isemail": "^3.1.2",

@@ -45,8 +45,8 @@ class CheckObjects {
             object && typeof object == "object" && 
             object.email && typeof object.email == "string" && 
             object.password && typeof object.password == "string";
-        console.log(`Is login valid: ${tmp}`);
-        return tmp;
+        console.log(`Is login valid: ${tmp == undefined ? false : tmp}`);
+        return tmp == undefined ? false : tmp;
     }
 
     // Returns true if the given object is a valid register
@@ -57,8 +57,8 @@ class CheckObjects {
             object.lastname && typeof object.lastname == "string" && object.lastname.length >= 2 &&
             object.email && typeof object.email == "string" && Isemail.validate(object.email) &&
             object.password && typeof object.password == "string";
-        console.log(`Is registration valid: ${tmp}`);
-        return tmp;
+        console.log(`Is registration valid: ${tmp == undefined ? false : tmp}`);
+        return tmp == undefined ? false : tmp;
     }
 }
 

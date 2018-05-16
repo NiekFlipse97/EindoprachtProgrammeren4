@@ -32,17 +32,8 @@ function login(email, password, hash, callback) {
         bcrypt.compare(password, hash, (error, res) => {
             if (res) {
                 genereteTokenAfterLogin(email, hash, callback);
-                // db.query(`SELECT * FROM user WHERE Email = "${email}" AND Password = "${hash}"`, (error, rows, fields) => {
-                //     if (error) console.log(`Error on login query: ${error.message}, ${error.sqlMessage}`);
-                //     if (error) callback(error, null);
-                //     else if (rows.length == 0) callback(ApiErrors.wrongRequestBodyProperties, null);
-                //     else callback(null, {
-                //             token: auth.encodeToken(email),
-                //             email: email
-                //         });
-                // });
             } else {
-                console.log(error);
+                callback(error, null);
             }
         });
     } else {

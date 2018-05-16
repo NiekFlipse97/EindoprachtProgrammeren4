@@ -1,15 +1,29 @@
 // Express
 const express = require("express");
 const router = express.Router();
-
-const auth = require('../auth/authentication');
-const db = require('../db/mysql-connector');
+// Models
 const UserLoginJSON = require("../model/UserLoginJSON");
 const UserRegisterJSON = require("../model/UserRegisterJSON");
-
+const ValidToken = require("../model/ValidToken");
+// Errors
 const ApiErrors = require("../model/ApiErrors.js");
-
+// Database
+const db = require('../db/mysql-connector');
+// Authentication
+const auth = require('../auth/authentication');
+// Email validation checker
 const Isemail = require('isemail');
+
+function respondWithError(response, error) {
+    if (error) {
+        // If the error is not an ApiError, convert it to an ApiError.
+        const myError = error instanceof ApiError ? error : ApiErrors.other(error.sqlMessage ? `SQL Error: ${error.sqlMessage} (message: ${error.message})` : error.message);
+        // Return the error to the client
+        response.status(myError.code).json(myError);
+        // Log the error
+        console.log(`Oops! An error appeared: ${JSON.stringify(myError)}`)
+    }
+}
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
@@ -18,16 +32,8 @@ router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) 
     const token = request.header('X-Access-Token');
 
     auth.decodeToken(token, (error, payload) => {
-        if (error) {
-            // Print the error message to the console.
-            console.log('Error handler: ' + error.message);
-
-            // Set the response's status to error.status or 401 (Unauthorised).
-            // Return json to the response with an error message.
-            response.status((error.status || 401)).json(ApiErrors.notAuthorised)
-        } else {
-            next();
-        }
+        if (error) respondWithError(response, error);
+        else next();
     });
 });
 
@@ -37,22 +43,8 @@ function login(email, password, callback){
         if(error) console.log(`Error on login query: ${error.message}, ${error.sqlMessage}`);
         if(error) callback(error, null);
         else if(rows.length == 0) callback(ApiErrors.wrongRequestBodyProperties, null);
-        else callback(null, {
-            token: auth.encodeToken(email),
-            email: email
-        });
+        else callback(null, new ValidToken(auth.encodeToken(email), email));
     });
-}
-
-function respondWithError(response, error) {
-    if (error) {
-        // If the error is not an ApiError, convert it to an ApiError.
-        const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
-        // Return the error to the client
-        response.status(myError.code).json(myError);
-        // Log the error
-        console.log(`Oops! An error appeared: ${JSON.stringify(myError)}`)
-    }
 }
 
 router.route("/register").post((request, response) => {

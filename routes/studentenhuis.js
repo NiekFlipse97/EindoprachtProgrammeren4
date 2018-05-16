@@ -194,7 +194,7 @@ router.route("/:huisId/maaltijd").get((request, response) => {
 
         db.query("SELECT * FROM maaltijd WHERE StudentenhuisID = ? ", [huisId], (error, rows, fields) => {
             if (error) {
-                response.status(error.code).json(JSON.stringify(error.message));
+                respondWithError(response, error);
                 return;
             }
 
@@ -226,9 +226,7 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
         const token = request.header('X-Access-Token');
 
         if (!CheckObjects.isMaaltijd(maaltijd)) {
-            const error = ApiErrors.wrongRequestBodyProperties;
-            response.status(error.code).json(error);
-            return;
+            throw ApiErrors.wrongRequestBodyProperties;
         }
 
         /**
@@ -251,12 +249,12 @@ router.route("/:huisId?/maaltijd").post((request, response) => {
 
                 db.query("INSERT INTO maaltijd (Naam, Beschrijving, Ingredienten, Allergie, Prijs, UserID, StudentenhuisID) VALUES (?, ?, ?, ?, ?, ?, ?)", [maaltijd.naam, maaltijd.beschrijving, maaltijd.ingredienten, maaltijd.allergie, maaltijd.prijs, userId, huisId], (err, rows, fields) => {
                     if (err) {
-                        response.status(err.status).json(JSON.stringify(err.message));
+                        respondWithError(response, err);
                         return;
                     }
                     db.query("SELECT Naam, Beschrijving, Ingredienten, Allergie, Prijs FROM `maaltijd` WHERE Naam = ? AND StudentenhuisID = ?", [maaltijd.naam, huisId], function (err, result,) {
                         if (err) {
-                            response.status(err.status).json(JSON.stringify(err.message));
+                            respondWithError(response, err);
                             return;
                         }
                         response.json(result)
@@ -366,7 +364,7 @@ router.route("/:huisId?/maaltijd/:maaltijdId?").delete((request, response) => {
 
                 db.query("SELECT * FROM maaltijd WHERE ID = ?", [maaltijdId], (error, r, f) => {
                     if (error) {
-                        response.status(error.code).json(JSON.stringify(error.message));
+                        respondWithError(response, error);
                     }
                     if (r.length < 1) {
                         const error = ApiErrors.notFound("maaltijdId");

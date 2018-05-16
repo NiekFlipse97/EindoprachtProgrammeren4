@@ -32,6 +32,9 @@ describe('Registration', () => {
                 res.body.should.have.property('token');
                 res.body.should.have.property('email');
                 validToken = res.body.token;
+                module.exports = {
+                    token: validToken
+                };
                 done()
             });
     });
@@ -190,7 +193,3 @@ describe('Login', () => {
     })
 
 });
-
-module.exports = { 
-    token: validToken
-};

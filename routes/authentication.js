@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../auth/authentication');
 const db = require('../db/mysql-connector');
 const ApiErrors = require("../model/ApiErrors.js");
+const Isemail = require('isemail');
 
 router.all(new RegExp("^(?!\/login$|\/register$).*"), (request, response, next) => {
     console.log("Validate Token");
@@ -54,7 +55,7 @@ class CheckObjects {
             object && typeof object == "object" && 
             object.firstname && typeof object.firstname == "string" && object.firstname.length >= 2 && 
             object.lastname && typeof object.lastname == "string" && object.lastname.length >= 2 &&
-            object.email && typeof object.email == "string" &&
+            object.email && typeof object.email == "string" && Isemail.validate(object.email) &&
             object.password && typeof object.password == "string";
         console.log(`Is registration valid: ${tmp}`);
         return tmp;

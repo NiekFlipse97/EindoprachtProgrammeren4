@@ -1,5 +1,16 @@
+const ApiErrors = require("./ApiErrors.js");
 module.exports = class MealResponse {
     constructor (ID, naam, beschrijving, ingredienten, allergie, prijs){
+        if(!(
+            ID && typeof ID == "number" &&
+            naam && typeof naam == "string" && 
+            beschrijving && typeof beschrijving == "string" && 
+            ingredienten && typeof ingredienten == "string" && 
+            allergie && typeof allergie == "string" && 
+            prijs && typeof prijs == "number"
+        ))
+            throw ApiErrors.wrongRequestBodyProperties;
+            
         this.ID = ID;
         this.naam = naam;
         this.beschrijving = beschrijving;

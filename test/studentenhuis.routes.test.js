@@ -118,6 +118,14 @@ describe('Studentenhuis API GET all', () => {
             .end((err, res) => {
                 res.should.have.status(200);
                 res.body.should.be.a('array');
+                res.body.forEach(element => {
+                    element.should.be.a('object');
+                    element.should.have.property('ID');
+                    element.should.have.property('naam');
+                    element.should.have.property('adres');
+                    element.should.have.property('contact');
+                    element.should.have.property('email');
+                });
                 done();
             });
     })

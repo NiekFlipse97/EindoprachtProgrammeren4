@@ -4,6 +4,7 @@
 const chai = require('chai');
 const expect = chai.expect;
 const chaiHttp = require('chai-http');
+const moment = require('moment');
 const server = require('../main');
 
 chai.should();
@@ -13,15 +14,17 @@ chai.use(chaiHttp);
 // for usage in other testcases that require login.
 let validToken;
 
+const datetime = moment().unix().toString();
+
 describe('Registration', () => {
     it('should return a token when providing valid information', (done) => {
         chai.request(server)
             .post('/api/register')
             .send({
                 firstname: "Test",
-                lastname: "Test",
+                lastname: datetime,
                 email: "test@test.com",
-                password: "T3st"
+                password: `T3st-${datetime}`
             })
             .end((err, res) => {
                 res.should.have.status(200);
@@ -34,17 +37,31 @@ describe('Registration', () => {
     });
 
     it('should return an error on GET request', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get('/api/register')
+            .end((err, res) => {
+                res.should.have.status(404);
+                done()
+            });
     });
 
     it('should throw an error when the user already exists', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/register')
+            .send({
+                firstname: "Test",
+                lastname: datetime,
+                email: "test@test.com",
+                password: `T3st-${datetime}`
+            })
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should throw an error when no firstname is provided', (done) => {

@@ -12,7 +12,7 @@ const dbManager = new DBManager(db);
 function respondWithError(response, error) {
     if (error) {
         // If the error is not an ApiError, convert it to an ApiError.
-        const myError = error instanceof ApiError ? error : ApiErrors.other(error.message);
+        const myError = error instanceof ApiError ? error : ApiErrors.other(error.sqlMessage ? `SQL Error: ${error.sqlMessage} (message: ${error.message})` : error.message);
         // Return the error to the client
         response.status(myError.code).json(myError);
         // Log the error

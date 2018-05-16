@@ -399,15 +399,6 @@ router.route("/:huisId/maaltijd/:maaltijdId/deelnemers").get((request, response)
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * @return de lijst met deelnemers voor de maaltijd met gegeven maaltijdID in het studentenhuis met huisId.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * Deelnemers zijn geregistreerde gebruikers die zich hebben aangemeld voor deze maaltijd.
-         * Iedere gebruiker kan alle deelnemers van alle maaltijden in alle studentenhuizen opvragen.
-         *
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         */
-
         checkHouseId(huisId, response);
 
         dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
@@ -424,16 +415,6 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").post((request, respon
         const huisId = request.params.huisId;
         const maaltijdId = request.params.maaltijdId;
 
-        /**
-         * Meld je aan voor een maaltijd in een studentenhuis.
-         * Als er geen studentenhuis of maaltijd met de gevraagde Id bestaat wordt een juiste foutmelding geretourneerd.
-         * De user ID uit het token is dat van de gebruiker die zich aanmeldt.
-         * Die gebruiker wordt dus aan de lijst met aanmelders toegevoegd.
-         * Een gebruiker kan zich alleen aanmelden als hij niet al aan de maaltijd deelneemt; anders volgt een foutmelding
-         *
-         * @throws ApiErrors.notFound("huisId of maaltijdId")
-         * @throws ApiErrors.conflict("Gebruiker is al aangemeld")
-         */
         checkHouseId(huisId, response);
 
         getUserIDFromRequest(request, (error, userId) => {
@@ -463,6 +444,16 @@ router.route("/:huisId?/maaltijd/:maaltijdId?/deelnemers").delete((request, resp
          * @return {}
          * @throws ApiErrors.notFound("huisId of maaltijdId")
          */
+
+        checkHouseId(huisId, response);
+
+        getUserIDFromRequest(request, (error, userId) => {
+            dbManager.deleteUserFromDeelnemers(userId, maaltijdId, (error, rows, fields) => {
+                dbManager.getUsersFromMaaltijdID(maaltijdId, (error, users) => {
+                    response.json(users);
+                })
+            })
+        })
 
     } catch (error) {
         respondWithError(response, error);

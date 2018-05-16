@@ -121,6 +121,12 @@ module.exports = class DBManager {
         });
     }
 
+    deleteUserFromDeelnemers(userId, maaltijdId, callback) {
+        this._db.query("DELETE FROM deelnemers WHERE UserID = ? AND MaaltijdID = ?", [userId, maaltijdId], (error, rows, fields) => {
+            callback(error, null, null);
+        })
+    }
+
     getMealFromID(mealId, callback) {
         this._db.query("SELECT * FROM maaltijd WHERE ID = ?", [mealId], (error, rows, fields) => {
             try {

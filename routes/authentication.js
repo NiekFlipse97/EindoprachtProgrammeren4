@@ -52,8 +52,8 @@ class CheckObjects {
     static isValidRegistration(object){
         const tmp = 
             object && typeof object == "object" && 
-            object.firstname && typeof object.firstname == "string" && 
-            object.lastname && typeof object.lastname == "string" &&
+            object.firstname && typeof object.firstname == "string" && object.firstname.length >= 2 && 
+            object.lastname && typeof object.lastname == "string" && object.lastname.length >= 2 &&
             object.email && typeof object.email == "string" &&
             object.password && typeof object.password == "string";
         console.log(`Is registration valid: ${tmp}`);
@@ -86,7 +86,7 @@ router.route("/register").post((request, response) => {
                 values: [firstName, lastName, email, password],
                 timeout: 2000
             };
-            
+
             // Execute the insert query
             db.query(query, (error, rows, fields) => {
                 // If there is no error

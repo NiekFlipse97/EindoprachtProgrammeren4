@@ -1,0 +1,11 @@
+{
+    "port": 8181,
+    "secretkey": "EindopdrachtSecretKey-171014SH-",
+    "database": {
+        "name": "studentenhuis",
+        "host": "localhost",
+        "username": "studentenhuis_user",
+        "password": "secret",
+        "port": 3306
+    }
+}

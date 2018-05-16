@@ -1,6 +1,6 @@
 const ApiErrors = require("../model/ApiErrors.js");
 const StudentenhuisResponse = require("../model/StudentenhuisResponse.js");
-
+const MealResponse = require('../model/MealResponse');
 module.exports = class DBManager {
     constructor(db){
         this._db = db;
@@ -92,4 +92,42 @@ module.exports = class DBManager {
             callback(error, null);
         });
     }
-}
+
+    getMealFromID(mealId, callback) {
+        this._db.query("SELECT * FROM maaltijd WHERE ID = ?", [mealId], (error, rows, fields) => {
+            try {
+                if(error) throw error;
+                if(rows.length === 0) throw ApiErrors.notFound("maaltijdId");
+
+                // Get first result (there should be only 1 result)
+                const meal = rows[0];
+                // Create a Maaltijdresponse from the DB result and return it
+                callback(null, meal);
+            } catch (error) {
+                callback(error, null);
+            }
+        })
+    }
+
+    getMealResponseFromID(mealId, callback) {
+        this._db.query(`SELECT * FROM maaltijd WHERE ID = ${mealId}`, (error, rows, fields) => {
+            try {
+                if(error) throw error;
+                if(rows.length == 0) throw ApiErrors.notFound("huisId");
+
+                // Get first result (there should be only 1 result)
+                const meal = rows[0];
+                // Create a Maaltijdresponse from the DB result and return it
+                callback(null, MealResponse.fromDatabaseObject(meal));
+            } catch (error) {
+                callback(error, null);
+            }
+        })
+    }
+
+    updateMeal(meal, mealId, userId, callback) {
+        this._db.query(`UPDATE maaltijd SET Naam = "${meal.naam}", Beschrijving = "${meal.beschrijving}", Ingredienten = "${meal.ingredienten}", Allergie = "${meal.allergie}", Prijs = "${meal.prijs}" WHERE ID = ${mealId} AND UserID = ${userId}`, (error, rows, fields) => {
+            callback(error, null);
+        });
+    }
+};

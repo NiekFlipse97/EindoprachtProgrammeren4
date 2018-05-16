@@ -228,6 +228,6 @@ describe('Login', () => {
                 res.body.should.have.property('datetime');
                 done()
             });
-    })
+    });
 
 });

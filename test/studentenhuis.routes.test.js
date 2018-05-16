@@ -8,10 +8,18 @@ chai.use(chaiHttp);
 
 describe('Studentenhuis API POST', () => {
     it('should throw an error when using invalid JWT token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/studentenhuis')
+            .set("X-Access-Token", "ABCD")
+            .send({})
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should return a studentenhuis when posting a valid object', (done) => {
@@ -38,10 +46,17 @@ describe('Studentenhuis API POST', () => {
 
 describe('Studentenhuis API GET all', () => {
     it('should throw an error when using invalid JWT token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get('/api/studentenhuis')
+            .set("X-Access-Token", "ABCD")
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should return all studentenhuizen when using a valid token', (done) => {
@@ -54,10 +69,17 @@ describe('Studentenhuis API GET all', () => {
 
 describe('Studentenhuis API GET one', () => {
     it('should throw an error when using invalid JWT token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .get('/api/studentenhuis/1/')
+            .set("X-Access-Token", "ABCD")
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should return the correct studentenhuis when using an existing huisId', (done) => {
@@ -77,10 +99,18 @@ describe('Studentenhuis API GET one', () => {
 
 describe('Studentenhuis API PUT', () => {
     it('should throw an error when using invalid JWT token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .put('/api/studentenhuis/1/')
+            .set("X-Access-Token", "ABCD")
+            .send({})
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should return a studentenhuis with ID when posting a valid object', (done) => {
@@ -107,10 +137,18 @@ describe('Studentenhuis API PUT', () => {
 
 describe('Studentenhuis API DELETE', () => {
     it('should throw an error when using invalid JWT token', (done) => {
-        //
-        // Hier schrijf je jouw testcase.
-        //
-        done()
+        chai.request(server)
+            .post('/api/studentenhuis/1/')
+            .set("X-Access-Token", "ABCD")
+            .send({})
+            .end((err, res) => {
+                res.should.not.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('message');
+                res.body.should.have.property('code');
+                res.body.should.have.property('datetime');
+                done()
+            });
     });
 
     it('should return a studentenhuis when posting a valid object', (done) => {

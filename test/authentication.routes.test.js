@@ -18,8 +18,8 @@ describe('Registration', () => {
         chai.request(server)
             .post('/api/register')
             .send({
-                firstName: "Test",
-                lastName: "Test",
+                firstname: "Test",
+                lastname: "Test",
                 email: "test@test.com",
                 password: "T3st"
             })
@@ -29,8 +29,6 @@ describe('Registration', () => {
                 res.body.should.have.property('token');
                 res.body.should.have.property('email');
                 validToken = res.body.token;
-                console.log("Token: " + validToken);
-
                 done()
             });
     });
